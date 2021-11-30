@@ -142,7 +142,7 @@ pub fn match_rule<'a>(
             //     RenameMode::Both => {}
             //     RenameMode::Other => {}
             // }
-            todo!()
+            vec![]
         }
         EventKind::Remove(_) => {
             // This is just the co-op of creation.
