@@ -1,0 +1,7 @@
+directories:
+  test:
+    path: tests/mock_dirs/path_a
+    rules: [ "a" ]
+rules:
+  b:
+    excludes: [ "exclude_b" ]

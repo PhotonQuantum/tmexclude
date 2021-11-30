@@ -1,0 +1,4 @@
+directories:
+  test:
+    path: tests/mock_dirs/some_file
+    rules: []

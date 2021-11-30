@@ -1,0 +1,30 @@
+on:
+  push:
+    branches:
+      - master
+
+name: sarif
+
+jobs:
+  upload-sarif:
+    runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/master' }}
+    steps:
+      - uses: actions/checkout@v2
+        name: Checkout 🛎️
+      - uses: actions-rs/toolchain@v1
+        name: Setup Cargo Toolchain 🛎️
+        with:
+          components: clippy
+          toolchain: stable
+          override: true
+      - uses: Swatinem/rust-cache@v1
+      - run: cargo install clippy-sarif
+        name: Install clippy-sarif 🛎️
+      - run:
+          cargo clippy --all-targets --message-format=json | clippy-sarif > results.sarif
+        name: Run Clippy Lints 🔨
+      - uses: github/codeql-action/upload-sarif@v1
+        name: Upload SARIF file 🚀
+        with:
+          sarif_file: results.sarif

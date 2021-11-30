@@ -1,0 +1,11 @@
+directories:
+  parent:
+    path: ../
+    rules:
+      - rust
+rules:
+  rust:
+    excludes:
+      - target
+    if-exists:
+      - Cargo.toml

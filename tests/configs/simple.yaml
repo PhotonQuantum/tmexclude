@@ -1,0 +1,17 @@
+directories:
+  directory_a:
+    path: tests/mock_dirs/path_a
+    rules: [ "rule_a", "rule_b" ]
+  directory_b:
+    path: tests/mock_dirs/path_b
+    rules: [ "rule_b", "rule_d" ]
+rules:
+  rule_a:
+    excludes: [ "exclude_a" ]
+  rule_b:
+    excludes: [ "exclude_b" ]
+  rule_c:
+    excludes: [ "exclude_c" ]
+  rule_d:
+    excludes: [ "exclude_d1", "exclude_d2" ]
+    if-exists: [ "a", "b" ]
