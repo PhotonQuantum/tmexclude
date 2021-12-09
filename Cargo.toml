@@ -12,17 +12,19 @@ name = "tmexclude_lib"
 path = "./src/lib.rs"
 
 [dependencies]
+core-foundation = { version = "0.9", features = ["mac_os_10_8_features"] }
+crossbeam-queue = "0.3"
 figment = { version = "0.10", features = ["toml", "yaml"] }
-futures = "0.3"
 itertools = "0.10"
+jwalk = "0.6"
 log = "0.4"
-notify = "5.0.0-pre.13"
-parking_lot = "0.11"
 pretty_env_logger = "0.4"
+rayon = "1.5"
 serde = { version = "1.0", features = ["derive"] }
+shellexpand = "2.1"
+tap = "1.0"
 thiserror = "1.0"
-tokio = { version = "1.14", features = ["fs", "macros", "parking_lot", "process", "rt", "rt-multi-thread", "sync"] }
-tokio-stream = "0.1"
+xattr = "0.2"
 
 [dev-dependencies]
 maplit = "1.0"

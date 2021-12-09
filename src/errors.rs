@@ -1,9 +1,6 @@
-use std::path::PathBuf;
-
 use thiserror::Error;
 
-pub type WatcherError = notify::Error;
-
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Error, PartialEq)]
 pub enum ConfigError {
     #[error("Error when loading config file: {0}")]
@@ -11,5 +8,5 @@ pub enum ConfigError {
     #[error("Missing rule: {0}")]
     Rule(String),
     #[error("Specified path does not exist or is a file: {0}")]
-    NotADirectory(PathBuf),
+    NotADirectory(String),
 }

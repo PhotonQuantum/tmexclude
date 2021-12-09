@@ -1,11 +1,26 @@
 directories:
-  parent:
-    path: ../
+  - path: ~/Projects
     rules:
       - rust
+      - nodejs
+      - python
 rules:
   rust:
     excludes:
       - target
     if-exists:
       - Cargo.toml
+  nodejs:
+    excludes:
+      - node_modules
+    if-exists:
+      - package.json
+  python:
+    excludes:
+      - build
+      - dist
+      - venv
+      - .venv
+    if-exists:
+      - requirements.txt
+      - setup.py

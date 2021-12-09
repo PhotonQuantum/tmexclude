@@ -1,9 +1,7 @@
 directories:
-  directory_a:
-    path: tests/mock_dirs/path_a
+  - path: tests/mock_dirs/path_a
     rules: [ "rule_a", "rule_b" ]
-  directory_b:
-    path: tests/mock_dirs/path_b
+  - path: tests/mock_dirs/path_b
     rules: [ "rule_b", "rule_d" ]
 rules:
   rule_a:

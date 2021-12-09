@@ -1,5 +1,6 @@
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::ops::ControlFlow;
+use std::path::{Path, PathBuf};
 
 use figment::{Figment, Provider};
 use itertools::Itertools;
@@ -9,7 +10,7 @@ use crate::errors::ConfigError;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Config {
-    pub directories: HashMap<String, Directory>, // TODO deal with subdir relationship?
+    pub directories: Vec<Directory>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -26,14 +27,40 @@ pub struct Rule {
     pub if_exists: Vec<PathBuf>,
 }
 
+fn max_common_path(path_1: impl AsRef<Path>, path_2: impl AsRef<Path>) -> PathBuf {
+    let max_common_path = path_1
+        .as_ref()
+        .components()
+        .zip(path_2.as_ref().components())
+        .try_fold(vec![], |mut prev, (l, r)| {
+            if l == r {
+                prev.push(l);
+                ControlFlow::Continue(prev)
+            } else {
+                ControlFlow::Break(prev)
+            }
+        });
+    match max_common_path {
+        ControlFlow::Continue(components) | ControlFlow::Break(components) => {
+            components.into_iter().collect()
+        }
+    }
+}
+
 impl Config {
+    /// Load config from provider.
+    ///
+    /// # Errors
+    /// `Figment` if error occurs when collecting config.
+    /// `Rule` if rule name is referenced but not defined.
+    /// `NotADirectory` if there's directory given but not found.
     pub fn from(provider: impl Provider) -> Result<Self, ConfigError> {
         let pre_config = PreConfig::from(provider)?;
         Ok(Self {
             directories: pre_config
                 .directories
                 .into_iter()
-                .map(|(name, pre_directory)| {
+                .map(|pre_directory| {
                     // start parsing rule names into rules
                     pre_directory
                         .rules
@@ -48,8 +75,7 @@ impl Config {
                         })
                         .try_collect()
                         .and_then(|rules| {
-                            pre_directory
-                                .path
+                            PathBuf::from(shellexpand::tilde(&pre_directory.path).as_ref())
                                 .canonicalize()
                                 .map_err(|_| ConfigError::NotADirectory(pre_directory.path.clone()))
                                 .and_then(|path| {
@@ -61,25 +87,35 @@ impl Config {
                         })
                         .map(|(path, rules)| {
                             // compose directory
-                            (name, Directory { path, rules })
+                            Directory { path, rules }
                         })
                 })
                 .try_collect()?,
         })
+    }
+    /// Get common root of all directories.
+    #[must_use]
+    pub fn root(&self) -> Option<PathBuf> {
+        self.directories
+            .iter()
+            .map(|item| &item.path)
+            .fold(None, |acc, x| {
+                acc.map_or_else(|| Some(x.clone()), |acc| Some(max_common_path(acc, x)))
+            })
     }
 }
 
 #[derive(Deserialize)]
 struct PreConfig {
     #[serde(default)]
-    directories: HashMap<String, PreDirectory>,
+    directories: Vec<PreDirectory>,
     #[serde(default)]
     rules: HashMap<String, Rule>,
 }
 
 #[derive(Deserialize)]
 struct PreDirectory {
-    path: PathBuf,
+    path: String,
     rules: Vec<String>,
 }
 
@@ -94,8 +130,7 @@ mod test {
     use std::path::PathBuf;
     use std::str::FromStr;
 
-    use figment::providers::{Data, Format, Yaml};
-    use maplit::hashmap;
+    use figment::providers::{Format, Yaml};
 
     use crate::config::{Config, Directory, Rule};
     use crate::errors::ConfigError;
@@ -132,16 +167,16 @@ mod test {
         assert_eq!(
             config,
             Config {
-                directories: hashmap! {
-                    String::from("directory_a") => Directory {
+                directories: vec![
+                    Directory {
                         path: cwd_path!("tests/mock_dirs/path_a"),
-                        rules: vec![rule_a.clone(), rule_b.clone()]
+                        rules: vec![rule_a, rule_b.clone()],
                     },
-                    String::from("directory_b") => Directory {
+                    Directory {
                         path: cwd_path!("tests/mock_dirs/path_b"),
-                        rules: vec![rule_b.clone(), rule_d.clone()]
+                        rules: vec![rule_b, rule_d],
                     },
-                }
+                ]
             }
         );
     }
@@ -162,7 +197,7 @@ mod test {
         let provider = Yaml::string(BROKEN);
         assert_eq!(
             Config::from(provider).expect_err("must fail"),
-            ConfigError::NotADirectory(path!("tests/mock_dirs/some_file"))
+            ConfigError::NotADirectory(String::from("tests/mock_dirs/some_file"))
         );
     }
 }
