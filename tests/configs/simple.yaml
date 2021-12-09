@@ -3,6 +3,8 @@ directories:
     rules: [ "rule_a", "rule_b" ]
   - path: tests/mock_dirs/path_b
     rules: [ "rule_b", "rule_d" ]
+skips:
+  - tests/mock_dirs/path_b
 rules:
   rule_a:
     excludes: [ "exclude_a" ]

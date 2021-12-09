@@ -1,3 +1,5 @@
+#![allow(clippy::module_name_repetitions)]
+
 pub use config::Config;
 
 mod config;

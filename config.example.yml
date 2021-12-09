@@ -1,9 +1,16 @@
 directories:
-  - path: ~/Projects
+  - path: ~/
     rules:
       - rust
       - nodejs
       - python
+      - pnpm
+skips:
+  - ~/Library
+  - ~/Pictures
+  - ~/.vscode
+  - ~/.npm
+  - ~/Dropbox
 rules:
   rust:
     excludes:
@@ -15,6 +22,9 @@ rules:
       - node_modules
     if-exists:
       - package.json
+  pnpm:
+    excludes:
+      - .pnpm-store
   python:
     excludes:
       - build

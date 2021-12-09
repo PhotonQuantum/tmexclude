@@ -1,0 +1,2 @@
+skips:
+  - tests/mock_dirs/non_exist

@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use thiserror::Error;
 
 #[allow(clippy::large_enum_variant)]
@@ -7,6 +9,8 @@ pub enum ConfigError {
     Figment(#[from] figment::Error),
     #[error("Missing rule: {0}")]
     Rule(String),
-    #[error("Specified path does not exist or is a file: {0}")]
-    NotADirectory(String),
+    #[error("Specified path does not exist: {0}")]
+    NotFound(String),
+    #[error("Specified path is not a directory: {0}")]
+    NotADirectory(PathBuf),
 }

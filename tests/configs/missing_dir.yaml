@@ -1,0 +1,3 @@
+directories:
+  - path: tests/mock_dirs/non_exist
+    rules: [ ]

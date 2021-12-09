@@ -13,7 +13,7 @@ fn main() {
 
     info!("Start walk");
     let time_start = Instant::now();
-    let plan = walk(root, config.directories, true);
+    let plan = walk(root, config, true);
     let elapsed = Instant::now() - time_start;
 
     info!("Completed. Elapsed time: {:?}", elapsed);

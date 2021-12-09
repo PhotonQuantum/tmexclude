@@ -1,16 +1,26 @@
-use std::collections::HashMap;
+use std::borrow::Cow;
+use std::collections::{HashMap, HashSet};
 use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 
 use figment::{Figment, Provider};
 use itertools::Itertools;
+use log::warn;
 use serde::Deserialize;
+use tap::TapFallible;
 
 use crate::errors::ConfigError;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Default, Eq, PartialEq)]
 pub struct Config {
     pub directories: Vec<Directory>,
+    pub skips: HashSet<PathBuf>,
+}
+
+/// A `CoW` view of [`Config`](Config).
+pub struct ConfigView<'a> {
+    pub directories: Cow<'a, [Directory]>,
+    pub skips: Cow<'a, HashSet<PathBuf>>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -77,11 +87,11 @@ impl Config {
                         .and_then(|rules| {
                             PathBuf::from(shellexpand::tilde(&pre_directory.path).as_ref())
                                 .canonicalize()
-                                .map_err(|_| ConfigError::NotADirectory(pre_directory.path.clone()))
+                                .map_err(|_| ConfigError::NotFound(pre_directory.path.clone()))
                                 .and_then(|path| {
                                     path.is_dir()
-                                        .then(|| path)
-                                        .ok_or(ConfigError::NotADirectory(pre_directory.path))
+                                        .then(|| path.clone())
+                                        .ok_or(ConfigError::NotADirectory(path))
                                 })
                                 .map(|path| (path, rules))
                         })
@@ -91,8 +101,29 @@ impl Config {
                         })
                 })
                 .try_collect()?,
+            skips: pre_config
+                .skips
+                .into_iter()
+                .filter_map(|path| {
+                    PathBuf::from(shellexpand::tilde(&path).as_ref())
+                        .canonicalize()
+                        .tap_err(|e| {
+                            warn!("Error when parsing skipped path {}: {}", path, e);
+                        })
+                        .ok()
+                })
+                .collect(),
         })
     }
+
+    /// Get common root of all directories.
+    #[must_use]
+    pub fn root(&self) -> Option<PathBuf> {
+        ConfigView::from(self).root()
+    }
+}
+
+impl ConfigView<'_> {
     /// Get common root of all directories.
     #[must_use]
     pub fn root(&self) -> Option<PathBuf> {
@@ -103,12 +134,39 @@ impl Config {
                 acc.map_or_else(|| Some(x.clone()), |acc| Some(max_common_path(acc, x)))
             })
     }
+
+    pub fn into_owned(self) -> Config {
+        Config {
+            directories: self.directories.into_owned(),
+            skips: self.skips.into_owned(),
+        }
+    }
+}
+
+impl From<Config> for ConfigView<'static> {
+    fn from(c: Config) -> Self {
+        Self {
+            directories: c.directories.into(),
+            skips: Cow::Owned(c.skips),
+        }
+    }
+}
+
+impl<'a> From<&'a Config> for ConfigView<'a> {
+    fn from(c: &'a Config) -> Self {
+        Self {
+            directories: (&c.directories).into(),
+            skips: Cow::Borrowed(&c.skips),
+        }
+    }
 }
 
 #[derive(Deserialize)]
 struct PreConfig {
     #[serde(default)]
     directories: Vec<PreDirectory>,
+    #[serde(default)]
+    skips: Vec<String>,
     #[serde(default)]
     rules: HashMap<String, Rule>,
 }
@@ -127,10 +185,12 @@ impl PreConfig {
 
 #[cfg(test)]
 mod test {
+    use std::collections::HashSet;
     use std::path::PathBuf;
     use std::str::FromStr;
 
     use figment::providers::{Format, Yaml};
+    use maplit::hashset;
 
     use crate::config::{Config, Directory, Rule};
     use crate::errors::ConfigError;
@@ -176,7 +236,8 @@ mod test {
                         path: cwd_path!("tests/mock_dirs/path_b"),
                         rules: vec![rule_b, rule_d],
                     },
-                ]
+                ],
+                skips: hashset![cwd_path!("tests/mock_dirs/path_b")],
             }
         );
     }
@@ -197,7 +258,30 @@ mod test {
         let provider = Yaml::string(BROKEN);
         assert_eq!(
             Config::from(provider).expect_err("must fail"),
-            ConfigError::NotADirectory(String::from("tests/mock_dirs/some_file"))
+            ConfigError::NotADirectory(cwd_path!("tests/mock_dirs/some_file"))
+        );
+    }
+
+    #[test]
+    fn must_fail_missing_dir() {
+        static BROKEN: &str = include_str!("../tests/configs/missing_dir.yaml");
+        let provider = Yaml::string(BROKEN);
+        assert_eq!(
+            Config::from(provider).expect_err("must fail"),
+            ConfigError::NotFound(String::from("tests/mock_dirs/non_exist"))
+        );
+    }
+
+    #[test]
+    fn must_allow_missing_skip_dir() {
+        static BROKEN: &str = include_str!("../tests/configs/allow_missing_skip_dir.yaml");
+        let provider = Yaml::string(BROKEN);
+        assert_eq!(
+            Config::from(provider).expect("must parse config"),
+            Config {
+                directories: vec![],
+                skips: HashSet::new(),
+            }
         );
     }
 }
