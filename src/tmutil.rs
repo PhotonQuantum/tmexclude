@@ -1,13 +1,24 @@
 use std::borrow::Borrow;
 use std::ops::{Add, AddAssign};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::ptr;
 
 use core_foundation::base::{TCFType, ToVoid};
 use core_foundation::number::{kCFBooleanFalse, kCFBooleanTrue};
 use core_foundation::url;
 use core_foundation::url::kCFURLIsExcludedFromBackupKey;
+use log::warn;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use tap::TapFallible;
+
+pub fn is_excluded(path: impl AsRef<Path>) -> std::io::Result<bool> {
+    let path = path.as_ref();
+    Ok(
+        xattr::get(path, "com.apple.metadata:com_apple_backup_excludeItem")
+            .tap_err(|e| warn!("Error when querying xattr of file {:?}: {}", path, e))?
+            .is_some(),
+    )
+}
 
 #[derive(Debug, Clone, Default)]
 pub struct ExclusionActionBatch {
@@ -16,6 +27,9 @@ pub struct ExclusionActionBatch {
 }
 
 impl ExclusionActionBatch {
+    pub fn is_empty(&self) -> bool {
+        self.add.is_empty() && self.remove.is_empty()
+    }
     pub fn apply(self, remove: bool) {
         self.add.into_par_iter().for_each(|path| {
             ExclusionAction::Add(path).apply();

@@ -14,3 +14,11 @@ pub enum ConfigError {
     #[error("Specified path is not a directory: {0}")]
     NotADirectory(PathBuf),
 }
+
+#[derive(Debug, Error)]
+pub enum PersistentError {
+    #[error("Invalid json: {0}")]
+    Json(#[from] serde_json::Error),
+    #[error("IO error: {0}")]
+    IO(#[from] std::io::Error),
+}

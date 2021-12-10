@@ -1,8 +1,8 @@
 #![allow(clippy::module_name_repetitions)]
 
-pub use config::Config;
-
-mod config;
+pub mod config;
 pub mod errors;
+pub mod persistent;
 mod tmutil;
 pub mod walker;
+pub mod watcher;

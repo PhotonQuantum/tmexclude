@@ -12,15 +12,25 @@ name = "tmexclude_lib"
 path = "./src/lib.rs"
 
 [dependencies]
+actix = "0.12"
+actix-rt = "2.5"
+atomic = "0.5"
 core-foundation = { version = "0.9", features = ["mac_os_10_8_features"] }
 crossbeam-queue = "0.3"
+directories = "4.0"
 figment = { version = "0.10", features = ["toml", "yaml"] }
+fs3 = "0.5"
+fsevent-stream = "0.2"
 itertools = "0.10"
 jwalk = "0.6"
 log = "0.4"
+parking_lot = "0.11"
+num_cpus = "1.13"
+humantime-serde = "1.0"
 pretty_env_logger = "0.4"
 rayon = "1.5"
 serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 shellexpand = "2.1"
 tap = "1.0"
 thiserror = "1.0"

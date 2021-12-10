@@ -1,0 +1,13 @@
+mode: all
+interval:
+  watch: 2m
+directories:
+  - path: tests/mock_dirs/path_b
+    rules: [ "rule_a", "rule_b" ]
+skips:
+  - tests/mock_dirs/path_a
+rules:
+  rule_a:
+    excludes: [ "exclude_b" ]
+  rule_b:
+    excludes: [ "exclude_c" ]

@@ -2,23 +2,112 @@ use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::Ordering;
+use std::sync::Arc;
+use std::time::Duration;
 
+use atomic::Atomic;
 use figment::{Figment, Provider};
 use itertools::Itertools;
 use log::warn;
+use parking_lot::RwLock;
 use serde::Deserialize;
 use tap::TapFallible;
 
 use crate::errors::ConfigError;
 
-#[derive(Debug, Clone, Default, Eq, PartialEq)]
+#[derive(Debug, Clone, Default)]
 pub struct Config {
+    pub mode: Arc<Atomic<ApplyMode>>,
+    pub interval: Arc<Atomic<Interval>>,
+    pub walk: Arc<RwLock<WalkConfig>>,
+}
+
+#[inline]
+const fn watcher_interval_default() -> Duration {
+    Duration::from_secs(30)
+}
+
+#[inline]
+const fn rescan_interval_default() -> Duration {
+    Duration::from_secs(86400)
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Deserialize)]
+pub struct Interval {
+    #[serde(with = "humantime_serde", default = "watcher_interval_default")]
+    pub watch: Duration,
+    #[serde(with = "humantime_serde", default = "rescan_interval_default")]
+    pub rescan: Duration,
+}
+
+impl Default for Interval {
+    fn default() -> Self {
+        Self {
+            watch: watcher_interval_default(),
+            rescan: rescan_interval_default(),
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ApplyMode {
+    DryRun,
+    AddOnly,
+    All,
+}
+
+impl Default for ApplyMode {
+    fn default() -> Self {
+        Self::AddOnly
+    }
+}
+
+impl Config {
+    /// Load config from provider.
+    ///
+    /// # Errors
+    /// `Figment` if error occurs when collecting config.
+    /// `Rule` if rule name is referenced but not defined.
+    /// `NotADirectory` if there's directory given but not found.
+    pub fn from(provider: impl Provider) -> Result<Self, ConfigError> {
+        let pre_config = PreConfig::from(provider)?;
+        Ok(Self {
+            mode: Arc::new(Atomic::new(pre_config.mode)),
+            interval: Arc::new(Atomic::new(pre_config.interval)),
+            walk: Arc::new(RwLock::new(WalkConfig::from(
+                pre_config.directories,
+                &pre_config.rules,
+                pre_config.skips,
+            )?)),
+        })
+    }
+
+    /// Reload config from provider.
+    ///
+    /// # Errors
+    /// `Figment` if error occurs when collecting config.
+    /// `Rule` if rule name is referenced but not defined.
+    /// `NotADirectory` if there's directory given but not found.
+    pub fn reload(&self, provider: impl Provider) -> Result<(), ConfigError> {
+        let pre_config = PreConfig::from(provider)?;
+        self.mode.store(pre_config.mode, Ordering::Relaxed);
+        self.interval.store(pre_config.interval, Ordering::Relaxed);
+        *self.walk.write() =
+            WalkConfig::from(pre_config.directories, &pre_config.rules, pre_config.skips)?;
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Default, Eq, PartialEq)]
+pub struct WalkConfig {
     pub directories: Vec<Directory>,
     pub skips: HashSet<PathBuf>,
 }
 
-/// A `CoW` view of [`Config`](Config).
-pub struct ConfigView<'a> {
+/// A `CoW` view of [`WalkConfig`](WalkConfig).
+pub struct WalkConfigView<'a> {
     pub directories: Cow<'a, [Directory]>,
     pub skips: Cow<'a, HashSet<PathBuf>>,
 }
@@ -57,18 +146,14 @@ fn max_common_path(path_1: impl AsRef<Path>, path_2: impl AsRef<Path>) -> PathBu
     }
 }
 
-impl Config {
-    /// Load config from provider.
-    ///
-    /// # Errors
-    /// `Figment` if error occurs when collecting config.
-    /// `Rule` if rule name is referenced but not defined.
-    /// `NotADirectory` if there's directory given but not found.
-    pub fn from(provider: impl Provider) -> Result<Self, ConfigError> {
-        let pre_config = PreConfig::from(provider)?;
+impl WalkConfig {
+    fn from(
+        directories: Vec<PreDirectory>,
+        rules: &HashMap<String, Rule>,
+        skips: Vec<String>,
+    ) -> Result<Self, ConfigError> {
         Ok(Self {
-            directories: pre_config
-                .directories
+            directories: directories
                 .into_iter()
                 .map(|pre_directory| {
                     // start parsing rule names into rules
@@ -77,8 +162,7 @@ impl Config {
                         .into_iter()
                         .map(|rule_name| {
                             // try get rule by name
-                            pre_config
-                                .rules
+                            rules
                                 .get(rule_name.as_str())
                                 .cloned()
                                 .ok_or(ConfigError::Rule(rule_name))
@@ -101,8 +185,7 @@ impl Config {
                         })
                 })
                 .try_collect()?,
-            skips: pre_config
-                .skips
+            skips: skips
                 .into_iter()
                 .filter_map(|path| {
                     PathBuf::from(shellexpand::tilde(&path).as_ref())
@@ -119,11 +202,11 @@ impl Config {
     /// Get common root of all directories.
     #[must_use]
     pub fn root(&self) -> Option<PathBuf> {
-        ConfigView::from(self).root()
+        WalkConfigView::from(self).root()
     }
 }
 
-impl ConfigView<'_> {
+impl WalkConfigView<'_> {
     /// Get common root of all directories.
     #[must_use]
     pub fn root(&self) -> Option<PathBuf> {
@@ -135,16 +218,17 @@ impl ConfigView<'_> {
             })
     }
 
-    pub fn into_owned(self) -> Config {
-        Config {
+    #[must_use]
+    pub fn into_owned(self) -> WalkConfig {
+        WalkConfig {
             directories: self.directories.into_owned(),
             skips: self.skips.into_owned(),
         }
     }
 }
 
-impl From<Config> for ConfigView<'static> {
-    fn from(c: Config) -> Self {
+impl From<WalkConfig> for WalkConfigView<'static> {
+    fn from(c: WalkConfig) -> Self {
         Self {
             directories: c.directories.into(),
             skips: Cow::Owned(c.skips),
@@ -152,8 +236,8 @@ impl From<Config> for ConfigView<'static> {
     }
 }
 
-impl<'a> From<&'a Config> for ConfigView<'a> {
-    fn from(c: &'a Config) -> Self {
+impl<'a> From<&'a WalkConfig> for WalkConfigView<'a> {
+    fn from(c: &'a WalkConfig) -> Self {
         Self {
             directories: (&c.directories).into(),
             skips: Cow::Borrowed(&c.skips),
@@ -163,6 +247,10 @@ impl<'a> From<&'a Config> for ConfigView<'a> {
 
 #[derive(Deserialize)]
 struct PreConfig {
+    #[serde(default)]
+    mode: ApplyMode,
+    #[serde(default)]
+    interval: Interval,
     #[serde(default)]
     directories: Vec<PreDirectory>,
     #[serde(default)]
@@ -188,11 +276,13 @@ mod test {
     use std::collections::HashSet;
     use std::path::PathBuf;
     use std::str::FromStr;
+    use std::sync::atomic::Ordering;
+    use std::time::Duration;
 
     use figment::providers::{Format, Yaml};
     use maplit::hashset;
 
-    use crate::config::{Config, Directory, Rule};
+    use crate::config::{ApplyMode, Config, Directory, Interval, Rule, WalkConfig};
     use crate::errors::ConfigError;
 
     macro_rules! path {
@@ -209,8 +299,8 @@ mod test {
     #[test]
     fn must_parse_simple() {
         static SIMPLE: &str = include_str!("../tests/configs/simple.yaml");
-        let provider = Yaml::string(SIMPLE);
-        let config = Config::from(provider).expect("must parse config");
+        let config = Config::from(Yaml::string(SIMPLE)).expect("must parse config");
+
         let rule_a = Rule {
             excludes: vec![path!("exclude_a")],
             if_exists: vec![],
@@ -224,9 +314,17 @@ mod test {
             if_exists: vec![path!("a"), path!("b")],
         };
 
+        assert_eq!(config.mode.load(Ordering::Relaxed), ApplyMode::DryRun);
         assert_eq!(
-            config,
-            Config {
+            config.interval.load(Ordering::Relaxed),
+            Interval {
+                watch: Duration::from_secs(60),
+                rescan: Duration::from_secs(43200),
+            }
+        );
+        assert_eq!(
+            &*config.walk.read(),
+            &WalkConfig {
                 directories: vec![
                     Directory {
                         path: cwd_path!("tests/mock_dirs/path_a"),
@@ -238,6 +336,44 @@ mod test {
                     },
                 ],
                 skips: hashset![cwd_path!("tests/mock_dirs/path_b")],
+            }
+        );
+    }
+
+    #[test]
+    fn must_reload() {
+        static SIMPLE: &str = include_str!("../tests/configs/simple.yaml");
+        static SIMPLE_RELOADED: &str = include_str!("../tests/configs/simple_reload.yaml");
+        let config = Config::from(Yaml::string(SIMPLE)).expect("must parse config");
+        config
+            .reload(Yaml::string(SIMPLE_RELOADED))
+            .expect("must reload config");
+
+        let rule_a = Rule {
+            excludes: vec![path!("exclude_b")],
+            if_exists: vec![],
+        };
+        let rule_b = Rule {
+            excludes: vec![path!("exclude_c")],
+            if_exists: vec![],
+        };
+
+        assert_eq!(config.mode.load(Ordering::Relaxed), ApplyMode::All);
+        assert_eq!(
+            config.interval.load(Ordering::Relaxed),
+            Interval {
+                watch: Duration::from_secs(120),
+                rescan: Duration::from_secs(86400),
+            }
+        );
+        assert_eq!(
+            &*config.walk.read(),
+            &WalkConfig {
+                directories: vec![Directory {
+                    path: cwd_path!("tests/mock_dirs/path_b"),
+                    rules: vec![rule_a, rule_b],
+                },],
+                skips: hashset![cwd_path!("tests/mock_dirs/path_a")],
             }
         );
     }
@@ -277,8 +413,11 @@ mod test {
         static BROKEN: &str = include_str!("../tests/configs/allow_missing_skip_dir.yaml");
         let provider = Yaml::string(BROKEN);
         assert_eq!(
-            Config::from(provider).expect("must parse config"),
-            Config {
+            &*Config::from(provider)
+                .expect("must parse config")
+                .walk
+                .read(),
+            &WalkConfig {
                 directories: vec![],
                 skips: HashSet::new(),
             }

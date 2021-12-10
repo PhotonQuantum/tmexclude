@@ -3,51 +3,62 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+use actix::{Actor, Handler, Message, SyncContext};
 use crossbeam_queue::SegQueue;
 use itertools::Itertools;
 use jwalk::WalkDirGeneric;
-use log::warn;
+use log::{debug, warn};
+use parking_lot::RwLock;
 use tap::TapFallible;
 
-use crate::config::{ConfigView, Directory, Rule};
-use crate::tmutil::{ExclusionAction, ExclusionActionBatch};
-use crate::Config;
+use crate::config::{ApplyMode, Directory, Rule, WalkConfig, WalkConfigView};
+use crate::tmutil::{is_excluded, ExclusionAction, ExclusionActionBatch};
 
-fn generate_diff<'a, 'b>(
-    cwd: &'a Path,
-    shallow_list: &'a HashMap<PathBuf, bool>,
-    directories: impl IntoIterator<Item = &'b Directory>,
-) -> ExclusionActionBatch {
-    let candidate_rules: Vec<&Rule> = directories
-        .into_iter()
-        .filter(|directory| directory.path.starts_with(cwd) || cwd.starts_with(&directory.path))
-        .flat_map(|directory| &directory.rules)
-        .collect();
-    shallow_list
-        .iter()
-        .filter_map(|(name, excluded)| {
-            let expected_excluded = candidate_rules.iter().any(|rule| {
-                (&rule.excludes).contains(name)
-                    && (rule.if_exists.is_empty()
-                        || rule
-                            .if_exists
-                            .iter()
-                            .any(|if_exist| shallow_list.contains_key(if_exist.as_path())))
-            });
-            match (expected_excluded, *excluded) {
-                (true, false) => Some(ExclusionAction::Add(cwd.join(name))),
-                (false, true) => Some(ExclusionAction::Remove(cwd.join(name))),
-                _ => None,
-            }
-        })
-        .into()
+pub struct Walker {
+    config: Arc<RwLock<WalkConfig>>,
 }
 
-/// Walk through a directory with given rules and return a exclusion action plan.
+impl Walker {
+    #[must_use]
+    pub fn new(config: Arc<RwLock<WalkConfig>>) -> Self {
+        Self { config }
+    }
+}
+
+impl Actor for Walker {
+    type Context = SyncContext<Self>;
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Message)]
+#[rtype("()")]
+pub struct Walk {
+    pub root: PathBuf,
+    pub recursive: bool,
+    pub apply: ApplyMode,
+}
+
+impl Handler<Walk> for Walker {
+    type Result = ();
+
+    fn handle(&mut self, msg: Walk, _ctx: &mut Self::Context) -> Self::Result {
+        let batch = walk(msg.root, &*self.config.read(), msg.recursive);
+        if batch.is_empty() {
+            return;
+        }
+        debug!("Apply batch {:?}", batch);
+        match msg.apply {
+            ApplyMode::DryRun => {}
+            ApplyMode::AddOnly => batch.apply(false),
+            ApplyMode::All => batch.apply(true),
+        }
+    }
+}
+
+/// Walk through a directory with given rules and return an exclusion action plan.
 #[must_use]
 pub fn walk<'a, 'b>(
     root: impl AsRef<Path> + 'a,
-    config: impl Into<ConfigView<'b>>,
+    config: impl Into<WalkConfigView<'b>>,
     recursive: bool,
 ) -> ExclusionActionBatch {
     let root = root.as_ref();
@@ -59,11 +70,11 @@ pub fn walk<'a, 'b>(
     }
 }
 
-fn walk_recursive(root: &Path, config: ConfigView) -> ExclusionActionBatch {
+fn walk_recursive(root: &Path, config: WalkConfigView) -> ExclusionActionBatch {
     let batch_queue = Arc::new(SegQueue::new());
     {
         let batch_queue = batch_queue.clone();
-        WalkDirGeneric::<(Config, ())>::new(root)
+        WalkDirGeneric::<(WalkConfig, ())>::new(root)
             .root_read_dir_state(config.into_owned())
             .skip_hidden(false)
             .process_read_dir(move |_, path, config, children| {
@@ -97,16 +108,7 @@ fn walk_recursive(root: &Path, config: ConfigView) -> ExclusionActionBatch {
                             entry.read_children_path = None;
                             None
                         } else {
-                            let excluded = xattr::get(
-                                &path,
-                                "com.apple.metadata:com_apple_backup_excludeItem",
-                            )
-                            .tap_err(|e| {
-                                warn!("Error when querying xattr of file {:?}: {}", path, e);
-                            })
-                            .ok()?
-                            .is_some();
-                            Some((entry, excluded))
+                            Some((entry, is_excluded(&path).ok()?))
                         }
                     })
                     .collect_vec();
@@ -139,7 +141,34 @@ fn walk_recursive(root: &Path, config: ConfigView) -> ExclusionActionBatch {
     actions
 }
 
-fn walk_non_recursive(root: &Path, config: &ConfigView) -> ExclusionActionBatch {
+fn walk_non_recursive(root: &Path, config: &WalkConfigView) -> ExclusionActionBatch {
+    // TODO cache early return paths to reduce syscall.
+    let skips = config.skips.as_ref();
+    if skips.iter().any(|skip| root.starts_with(skip)) {
+        // The directory should be skipped.
+        return ExclusionActionBatch::default();
+    }
+
+    let mut directories = config
+        .directories
+        .as_ref()
+        .iter()
+        .filter(|directory| root.starts_with(&directory.path) || directory.path.starts_with(root))
+        .peekable();
+    if directories.peek().is_none() {
+        // There's no need to scan because no rules is applicable.
+        return ExclusionActionBatch::default();
+    }
+
+    if root
+        .ancestors()
+        .any(|path| is_excluded(path).unwrap_or(false))
+    {
+        // One of its parents is excluded.
+        return ExclusionActionBatch::default();
+    }
+
+    debug!("Walk through {:?}", root);
     match fs::read_dir(root) {
         Ok(dir) => {
             let shallow_list: HashMap<_, _> = dir
@@ -154,25 +183,48 @@ fn walk_non_recursive(root: &Path, config: &ConfigView) -> ExclusionActionBatch 
                         // Skip this entry in all preceding procedures and scans.
                         None
                     } else {
-                        let excluded =
-                            xattr::get(&path, "com.apple.metadata:com_apple_backup_excludeItem")
-                                .tap_err(|e| {
-                                    warn!("Error when querying xattr of file {:?}: {}", path, e);
-                                })
-                                .ok()?
-                                .is_some();
                         Some((
                             PathBuf::from(path.file_name().expect("file name").to_os_string()),
-                            excluded,
+                            is_excluded(&path).ok()?,
                         ))
                     }
                 })
                 .collect();
-            generate_diff(root, &shallow_list, &*config.directories)
+            generate_diff(root, &shallow_list, directories)
         }
         Err(e) => {
             warn!("Error when scanning dir {:?}: {}", root, e);
             ExclusionActionBatch::default()
         }
     }
+}
+
+fn generate_diff<'a, 'b>(
+    cwd: &'a Path,
+    shallow_list: &'a HashMap<PathBuf, bool>,
+    directories: impl IntoIterator<Item = &'b Directory>,
+) -> ExclusionActionBatch {
+    let candidate_rules: Vec<&Rule> = directories
+        .into_iter()
+        .filter(|directory| directory.path.starts_with(cwd) || cwd.starts_with(&directory.path))
+        .flat_map(|directory| &directory.rules)
+        .collect();
+    shallow_list
+        .iter()
+        .filter_map(|(name, excluded)| {
+            let expected_excluded = candidate_rules.iter().any(|rule| {
+                (&rule.excludes).contains(name)
+                    && (rule.if_exists.is_empty()
+                        || rule
+                            .if_exists
+                            .iter()
+                            .any(|if_exist| shallow_list.contains_key(if_exist.as_path())))
+            });
+            match (expected_excluded, *excluded) {
+                (true, false) => Some(ExclusionAction::Add(cwd.join(name))),
+                (false, true) => Some(ExclusionAction::Remove(cwd.join(name))),
+                _ => None,
+            }
+        })
+        .into()
 }
