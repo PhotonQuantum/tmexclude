@@ -1,4 +1,5 @@
 #![allow(clippy::future_not_send)]
+
 use std::error::Error;
 use std::path::Path;
 use std::sync::atomic::Ordering;
@@ -7,8 +8,7 @@ use std::sync::Arc;
 use actix::{Actor, Addr, SyncArbiter};
 use actix_web::web::Data;
 use actix_web::{web, App, HttpServer};
-use directories::ProjectDirs;
-use eyre::{eyre, Result, WrapErr};
+use eyre::{Result, WrapErr};
 use itertools::Itertools;
 use parking_lot::Mutex;
 
@@ -16,6 +16,8 @@ use tmexclude_lib::config::Config;
 use tmexclude_lib::persistent::PersistentState;
 use tmexclude_lib::walker::{SkipCache, Walker};
 use tmexclude_lib::watcher::{RegisterWatcher, Watcher};
+
+use crate::utils::ensure_state_dir;
 
 async fn reload(
     config: Data<Config>,
@@ -43,11 +45,7 @@ async fn reload(
 }
 
 pub async fn app(config: Config, addr: impl AsRef<Path>) -> Result<()> {
-    let state_dir = ProjectDirs::from("me", "lightquantum", "tmexclude")
-        .ok_or_else(|| eyre!("Home directory not found"))?
-        .data_local_dir()
-        .to_path_buf();
-    std::fs::create_dir_all(&state_dir).wrap_err("Failed to create state directory")?;
+    let state_dir = ensure_state_dir()?;
     let state = Arc::new(Mutex::new(
         PersistentState::load(state_dir.join("state.json"))
             .wrap_err("Failed to load persisted state")?,

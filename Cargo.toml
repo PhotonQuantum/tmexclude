@@ -2,6 +2,8 @@
 name = "tmexclude"
 version = "0.1.0"
 edition = "2021"
+authors = ["LightQuantum <self@lightquantum.me>"]
+description = "Exclude undesired files (node_modules, target, etc) from your TimeMachine backup."
 
 [[bin]]
 name = "tmexclude"
@@ -17,6 +19,7 @@ actix-rt = "2.5"
 actix-web = "4.0.0-beta.13"
 atomic = "0.5"
 clap = { version = "3.0.0-rc.4", features = ["derive"] }
+color-eyre = "0.5"
 core-foundation = { version = "0.9", features = ["mac_os_10_8_features"] }
 crossbeam-queue = "0.3"
 directories = "4.0"

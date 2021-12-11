@@ -10,7 +10,7 @@ use fsevent_stream::ffi::{kFSEventStreamCreateFlagIgnoreSelf, kFSEventStreamEven
 use fsevent_stream::flags::StreamFlags;
 use fsevent_stream::stream::{create_event_stream, Event, EventStreamHandler};
 use itertools::Itertools;
-use log::{error, warn};
+use log::{error, info, warn};
 use parking_lot::Mutex;
 
 use crate::config::ApplyMode;
@@ -89,6 +89,7 @@ where
         self.historical_path = if last_event_id == kFSEventStreamEventIdSinceNow {
             None
         } else {
+            info!("Start processing historical events");
             Some(HashSet::new())
         };
         let spawn_handle = ctx.add_stream(stream);
@@ -140,6 +141,7 @@ fn consume_event_batch(
                 event.flags.contains(StreamFlags::HISTORY_DONE)
             });
             ConsumeState::History(if history_done {
+                info!("Historical events done");
                 HistoryState::Finished(item_iter.map(|item| item.path).collect::<HashSet<_>>())
             } else {
                 HistoryState::Pending

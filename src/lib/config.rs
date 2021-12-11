@@ -22,6 +22,7 @@ use crate::errors::ConfigError;
 pub type ProviderFactory = Arc<dyn Fn() -> Box<dyn Provider> + Send + Sync>;
 
 struct BoxedProvider(Box<dyn Provider>);
+
 impl Provider for BoxedProvider {
     fn metadata(&self) -> Metadata {
         self.0.metadata()
