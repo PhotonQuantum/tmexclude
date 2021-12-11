@@ -1,1 +1,3 @@
+mod daemon;
+
 fn main() {}
