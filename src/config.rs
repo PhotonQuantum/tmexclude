@@ -147,6 +147,32 @@ fn max_common_path(path_1: impl AsRef<Path>, path_2: impl AsRef<Path>) -> PathBu
     }
 }
 
+// Squash nested directory paths.
+fn get_paths(directories: &[Directory]) -> HashSet<&Path> {
+    directories
+        .iter()
+        .map(|item| &item.path)
+        // Sort paths by length so that child paths appear later than their ancestor.
+        .sorted_unstable_by_key(|path| path.as_os_str().len())
+        .fold(HashSet::new(), |mut acc, x| {
+            if !x.ancestors().any(|ancestor| acc.contains(ancestor)) {
+                // No ancestors of this path is in the set.
+                acc.insert(x.as_path());
+            }
+            acc
+        })
+}
+
+// Get common root of all directories.
+fn get_root(directories: &[Directory]) -> Option<PathBuf> {
+    directories
+        .iter()
+        .map(|item| &item.path)
+        .fold(None, |acc, x| {
+            acc.map_or_else(|| Some(x.clone()), |acc| Some(max_common_path(acc, x)))
+        })
+}
+
 impl WalkConfig {
     fn from(
         directories: Vec<PreDirectory>,
@@ -190,10 +216,7 @@ impl WalkConfig {
                                 })
                                 .map(|path| (path, rules))
                         })
-                        .map(|(path, rules)| {
-                            // compose directory
-                            Directory { path, rules }
-                        })
+                        .map(|(path, rules)| Directory { path, rules })
                 })
                 .try_collect()?,
             skips: skips
@@ -213,7 +236,13 @@ impl WalkConfig {
     /// Get common root of all directories.
     #[must_use]
     pub fn root(&self) -> Option<PathBuf> {
-        WalkConfigView::from(self).root()
+        get_root(&*self.directories)
+    }
+
+    /// Squash nested directory paths.
+    #[must_use]
+    pub fn paths(&self) -> HashSet<&Path> {
+        get_paths(&*self.directories)
     }
 }
 
@@ -221,12 +250,13 @@ impl WalkConfigView<'_> {
     /// Get common root of all directories.
     #[must_use]
     pub fn root(&self) -> Option<PathBuf> {
-        self.directories
-            .iter()
-            .map(|item| &item.path)
-            .fold(None, |acc, x| {
-                acc.map_or_else(|| Some(x.clone()), |acc| Some(max_common_path(acc, x)))
-            })
+        get_root(self.directories.as_ref())
+    }
+
+    /// Squash nested directory paths.
+    #[must_use]
+    pub fn paths(&self) -> HashSet<&Path> {
+        get_paths(self.directories.as_ref())
     }
 
     #[must_use]
@@ -284,9 +314,8 @@ impl PreConfig {
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashSet;
     use std::io::ErrorKind;
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
     use std::str::FromStr;
     use std::sync::atomic::Ordering;
     use std::time::Duration;
@@ -294,7 +323,9 @@ mod test {
     use figment::providers::{Format, Yaml};
     use maplit::hashset;
 
-    use crate::config::{ApplyMode, Config, Directory, Interval, Rule, WalkConfig};
+    use crate::config::{
+        get_paths, get_root, ApplyMode, Config, Directory, Interval, Rule, WalkConfig,
+    };
     use crate::errors::ConfigError;
 
     macro_rules! path {
@@ -306,6 +337,21 @@ mod test {
         ($s: expr) => {
             std::env::current_dir().unwrap().join($s)
         };
+    }
+
+    macro_rules! directory {
+        ($s: expr) => {
+            Directory {
+                path: path!($s),
+                rules: vec![],
+            }
+        };
+    }
+
+    macro_rules! directories {
+        ($( $s:expr ),*) => {
+            [$(directory!($s)),*]
+        }
     }
 
     #[test]
@@ -440,10 +486,36 @@ mod test {
                 .expect("must parse config")
                 .walk
                 .read(),
-            &WalkConfig {
-                directories: vec![],
-                skips: HashSet::new(),
-            }
+            &WalkConfig::default()
+        );
+    }
+
+    #[test]
+    fn must_get_directory_root() {
+        assert_eq!(
+            get_root(&directories!["/a/b/c/d", "/a/b/c"]),
+            Some(path!("/a/b/c"))
+        );
+        assert_eq!(
+            get_root(&directories!["/a/e/a", "/a/c", "/a/c/d"]),
+            Some(path!("/a"))
+        );
+        assert_eq!(get_root(&directories!["/a", "/b"]), Some(path!("/")));
+    }
+
+    #[test]
+    fn must_get_squashed_paths() {
+        assert_eq!(
+            get_paths(&directories!["/a/b/c", "/a/b", "/a/b/d"]),
+            hashset! {Path::new("/a/b")}
+        );
+        assert_eq!(
+            get_paths(&directories!["/a/b/c", "/a/e", "/a/b/d"]),
+            hashset! {Path::new("/a/b/c"), Path::new("/a/b/d"), Path::new("/a/e")}
+        );
+        assert_eq!(
+            get_paths(&directories!["/e", "/a/b/c", "/a/e", "/a/b/d", "/a/b/d/e"]),
+            hashset! {Path::new("/a/b/c"), Path::new("/a/b/d"), Path::new("/a/e"), Path::new("/e")}
         );
     }
 }

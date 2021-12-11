@@ -8,7 +8,10 @@ pub enum ConfigError {
     #[error("Missing rule: {0}")]
     Rule(String),
     #[error("Specified path is invalid: {path}")]
-    InvalidPath { path: String, source: std::io::Error },
+    InvalidPath {
+        path: String,
+        source: std::io::Error,
+    },
 }
 
 #[derive(Debug, Error)]
