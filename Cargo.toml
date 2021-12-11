@@ -9,7 +9,7 @@ path = "./src/main.rs"
 
 [lib]
 name = "tmexclude_lib"
-path = "./src/lib.rs"
+path = "./src/lib/lib.rs"
 
 [dependencies]
 actix = "0.12"

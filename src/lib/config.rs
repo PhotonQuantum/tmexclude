@@ -395,7 +395,7 @@ mod test {
 
     #[test]
     fn must_parse_simple() {
-        static SIMPLE: &str = include_str!("../tests/configs/simple.yaml");
+        static SIMPLE: &str = include_str!("../../tests/configs/simple.yaml");
         let config = Config::from(|| Yaml::string(SIMPLE)).expect("must parse config");
 
         let rule_a = Rule {
@@ -439,8 +439,8 @@ mod test {
 
     #[test]
     fn must_reload() {
-        static SIMPLE: &str = include_str!("../tests/configs/simple.yaml");
-        static SIMPLE_RELOADED: &str = include_str!("../tests/configs/simple_reload.yaml");
+        static SIMPLE: &str = include_str!("../../tests/configs/simple.yaml");
+        static SIMPLE_RELOADED: &str = include_str!("../../tests/configs/simple_reload.yaml");
         let file = tempfile::NamedTempFile::new().expect("to be created");
         let path = file.path().to_path_buf();
 
@@ -482,7 +482,7 @@ mod test {
 
     #[test]
     fn must_fail_broken_rule() {
-        static BROKEN: &str = include_str!("../tests/configs/broken_rule.yaml");
+        static BROKEN: &str = include_str!("../../tests/configs/broken_rule.yaml");
         let provider = || Yaml::string(BROKEN);
         let error = Config::from(provider).expect_err("must fail");
         match error {
@@ -493,7 +493,7 @@ mod test {
 
     #[test]
     fn must_fail_broken_dir() {
-        static BROKEN: &str = include_str!("../tests/configs/broken_dir.yaml");
+        static BROKEN: &str = include_str!("../../tests/configs/broken_dir.yaml");
         let provider = || Yaml::string(BROKEN);
         let error = Config::from(provider).expect_err("must fail");
 
@@ -508,7 +508,7 @@ mod test {
 
     #[test]
     fn must_fail_missing_dir() {
-        static BROKEN: &str = include_str!("../tests/configs/missing_dir.yaml");
+        static BROKEN: &str = include_str!("../../tests/configs/missing_dir.yaml");
         let provider = || Yaml::string(BROKEN);
         let error = Config::from(provider).expect_err("must fail");
 
@@ -523,7 +523,7 @@ mod test {
 
     #[test]
     fn must_allow_missing_skip_dir() {
-        static BROKEN: &str = include_str!("../tests/configs/allow_missing_skip_dir.yaml");
+        static BROKEN: &str = include_str!("../../tests/configs/allow_missing_skip_dir.yaml");
         let provider = || Yaml::string(BROKEN);
         assert_eq!(
             &*Config::from(provider)
