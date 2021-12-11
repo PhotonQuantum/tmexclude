@@ -3,14 +3,12 @@
 use std::error::Error;
 use std::path::Path;
 use std::sync::atomic::Ordering;
-use std::sync::Arc;
 
 use actix::{Actor, Addr, SyncArbiter};
 use actix_web::web::Data;
 use actix_web::{web, App, HttpServer};
 use eyre::{Result, WrapErr};
 use itertools::Itertools;
-use parking_lot::Mutex;
 
 use tmexclude_lib::config::Config;
 use tmexclude_lib::persistent::PersistentState;
@@ -46,10 +44,9 @@ async fn reload(
 
 pub async fn app(config: Config, addr: impl AsRef<Path>) -> Result<()> {
     let state_dir = ensure_state_dir()?;
-    let state = Arc::new(Mutex::new(
-        PersistentState::load(state_dir.join("state.json"))
-            .wrap_err("Failed to load persisted state")?,
-    ));
+    let state = PersistentState::load(state_dir.join("state.json"))
+        .wrap_err("Failed to load persisted state")?;
+    let state_addr = state.start();
 
     let walker_skip_cache = SkipCache::default();
     let walker_config = config.walk.clone();
@@ -57,7 +54,7 @@ pub async fn app(config: Config, addr: impl AsRef<Path>) -> Result<()> {
         Walker::new(walker_config.clone(), walker_skip_cache.clone())
     });
 
-    let watcher = Watcher::new(config.mode.clone(), state, walker_addr);
+    let watcher = Watcher::new(config.mode.clone(), state_addr, walker_addr);
     let watcher_addr = watcher.start();
     watcher_addr
         .send(RegisterWatcher {

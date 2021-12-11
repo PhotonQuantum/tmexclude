@@ -1,27 +1,30 @@
 use std::collections::HashSet;
+use std::io::{Error, ErrorKind};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::Duration;
 
-use actix::{Actor, Addr, AsyncContext, Context, Handler, Message, SpawnHandle, StreamHandler};
+use actix::{
+    Actor, ActorFutureExt, Addr, AsyncContext, Context, Handler, Message, ResponseActFuture,
+    SpawnHandle, StreamHandler, WrapFuture,
+};
 use atomic::Atomic;
 use fsevent_stream::ffi::{kFSEventStreamCreateFlagIgnoreSelf, kFSEventStreamEventIdSinceNow};
 use fsevent_stream::flags::StreamFlags;
 use fsevent_stream::stream::{create_event_stream, Event, EventStreamHandler};
 use itertools::Itertools;
-use log::{error, info, warn};
-use parking_lot::Mutex;
+use log::{info, warn};
 
 use crate::config::ApplyMode;
-use crate::persistent::PersistentState;
+use crate::persistent::{GetState, PersistentState, SetStateWith};
 use crate::walker::{Walk, Walker};
 
 pub struct Watcher {
     apply_mode: Arc<Atomic<ApplyMode>>,
     handler: Option<(SpawnHandle, EventStreamHandler)>,
     historical_path: Option<HashSet<PathBuf>>,
-    state: Arc<Mutex<PersistentState>>,
+    state: Addr<PersistentState>,
     walker: Addr<Walker>,
 }
 
@@ -30,7 +33,7 @@ impl Watcher {
     #[must_use]
     pub fn new(
         apply_mode: Arc<Atomic<ApplyMode>>,
-        state: Arc<Mutex<PersistentState>>,
+        state: Addr<PersistentState>,
         walker: Addr<Walker>,
     ) -> Self {
         Self {
@@ -67,35 +70,47 @@ pub struct RegisterWatcher<I> {
 
 impl<I, P> Handler<RegisterWatcher<I>> for Watcher
 where
-    I: IntoIterator<Item = P>,
+    I: IntoIterator<Item = P> + 'static,
     P: AsRef<Path>,
 {
-    type Result = std::io::Result<()>;
+    type Result = ResponseActFuture<Self, std::io::Result<()>>;
 
-    fn handle(&mut self, msg: RegisterWatcher<I>, ctx: &mut Self::Context) -> Self::Result {
-        let last_event_id = self.state.lock().state().last_event_id;
-        let (stream, event_handle) = create_event_stream(
-            msg.paths,
-            last_event_id,
-            msg.interval,
-            kFSEventStreamCreateFlagIgnoreSelf,
-        )?;
+    fn handle(&mut self, msg: RegisterWatcher<I>, _ctx: &mut Self::Context) -> Self::Result {
+        Box::pin(
+            self.state
+                .send(GetState)
+                .into_actor(self)
+                .map(|state, _, _| {
+                    state
+                        .map(|state| state.last_event_id)
+                        .map_err(|e| Error::new(ErrorKind::ConnectionAborted, e))
+                })
+                .map(move |last_event_id, act, ctx| {
+                    let last_event_id = last_event_id?;
+                    let (stream, event_handle) = create_event_stream(
+                        msg.paths,
+                        last_event_id,
+                        msg.interval,
+                        kFSEventStreamCreateFlagIgnoreSelf,
+                    )?;
 
-        if let Some((spawn_handle, mut event_handle)) = self.handler.take() {
-            event_handle.abort();
-            ctx.cancel_future(spawn_handle);
-        }
+                    if let Some((spawn_handle, mut event_handle)) = act.handler.take() {
+                        event_handle.abort();
+                        ctx.cancel_future(spawn_handle);
+                    }
 
-        self.historical_path = if last_event_id == kFSEventStreamEventIdSinceNow {
-            None
-        } else {
-            info!("Start processing historical events");
-            Some(HashSet::new())
-        };
-        let spawn_handle = ctx.add_stream(stream);
-        self.handler = Some((spawn_handle, event_handle));
+                    act.historical_path = if last_event_id == kFSEventStreamEventIdSinceNow {
+                        None
+                    } else {
+                        info!("Start processing historical events");
+                        Some(HashSet::new())
+                    };
+                    let spawn_handle = ctx.add_stream(stream);
+                    act.handler = Some((spawn_handle, event_handle));
 
-        Ok(())
+                    Ok(())
+                }),
+        )
     }
 }
 
@@ -157,13 +172,9 @@ impl StreamHandler<Vec<Event>> for Watcher {
             .max_by_key(|event| event.id)
             .map(|event| event.id)
         {
-            if let Err(e) = self
-                .state
-                .lock()
-                .set_with(|state| state.last_event_id = max_event_id)
-            {
-                error!("Error when setting last_event_id state: {}", e);
-            }
+            self.state.do_send(SetStateWith(move |state| {
+                state.last_event_id = max_event_id;
+            }));
         }
 
         let apply = self.apply_mode.load(Ordering::Relaxed);

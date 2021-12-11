@@ -1,4 +1,3 @@
-use std::io::ErrorKind;
 use std::path::PathBuf;
 
 use actix_rt::System;
