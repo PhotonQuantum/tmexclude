@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
+use std::io::ErrorKind;
 use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
@@ -171,11 +172,21 @@ impl WalkConfig {
                         .and_then(|rules| {
                             PathBuf::from(shellexpand::tilde(&pre_directory.path).as_ref())
                                 .canonicalize()
-                                .map_err(|_| ConfigError::NotFound(pre_directory.path.clone()))
+                                .map_err(|e| ConfigError::InvalidPath {
+                                    path: pre_directory.path.clone(),
+                                    source: e,
+                                })
                                 .and_then(|path| {
-                                    path.is_dir()
-                                        .then(|| path.clone())
-                                        .ok_or(ConfigError::NotADirectory(path))
+                                    path.is_dir().then(|| path.clone()).ok_or(
+                                        ConfigError::InvalidPath {
+                                            path: pre_directory.path.clone(),
+                                            // TODO change this to ErrorKind::NotADirectory once `io_error_more` is stabilized.
+                                            source: std::io::Error::new(
+                                                ErrorKind::Other,
+                                                "not a directory",
+                                            ),
+                                        },
+                                    )
                                 })
                                 .map(|path| (path, rules))
                         })
@@ -274,6 +285,7 @@ impl PreConfig {
 #[cfg(test)]
 mod test {
     use std::collections::HashSet;
+    use std::io::ErrorKind;
     use std::path::PathBuf;
     use std::str::FromStr;
     use std::sync::atomic::Ordering;
@@ -382,30 +394,41 @@ mod test {
     fn must_fail_broken_rule() {
         static BROKEN: &str = include_str!("../tests/configs/broken_rule.yaml");
         let provider = Yaml::string(BROKEN);
-        assert_eq!(
-            Config::from(provider).expect_err("must fail"),
-            ConfigError::Rule(String::from("a"))
-        );
+        let error = Config::from(provider).expect_err("must fail");
+        match error {
+            ConfigError::Rule(path) => assert_eq!(path, "a"),
+            _ => panic!("Error type mismatch"),
+        }
     }
 
     #[test]
     fn must_fail_broken_dir() {
         static BROKEN: &str = include_str!("../tests/configs/broken_dir.yaml");
         let provider = Yaml::string(BROKEN);
-        assert_eq!(
-            Config::from(provider).expect_err("must fail"),
-            ConfigError::NotADirectory(cwd_path!("tests/mock_dirs/some_file"))
-        );
+        let error = Config::from(provider).expect_err("must fail");
+
+        match error {
+            ConfigError::InvalidPath { path, source } => {
+                assert_eq!(path, "tests/mock_dirs/some_file");
+                assert_eq!(source.to_string(), "not a directory");
+            }
+            _ => panic!("Error type mismatch"),
+        }
     }
 
     #[test]
     fn must_fail_missing_dir() {
         static BROKEN: &str = include_str!("../tests/configs/missing_dir.yaml");
         let provider = Yaml::string(BROKEN);
-        assert_eq!(
-            Config::from(provider).expect_err("must fail"),
-            ConfigError::NotFound(String::from("tests/mock_dirs/non_exist"))
-        );
+        let error = Config::from(provider).expect_err("must fail");
+
+        match error {
+            ConfigError::InvalidPath { path, source } => {
+                assert_eq!(path, "tests/mock_dirs/non_exist");
+                assert_eq!(source.kind(), ErrorKind::NotFound);
+            }
+            _ => panic!("Error type mismatch"),
+        }
     }
 
     #[test]
