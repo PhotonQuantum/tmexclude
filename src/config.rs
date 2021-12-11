@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
+use std::fmt::{Debug, Formatter};
 use std::io::ErrorKind;
 use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
@@ -8,7 +9,8 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use atomic::Atomic;
-use figment::{Figment, Provider};
+use figment::value::{Dict, Map};
+use figment::{Error, Figment, Metadata, Profile, Provider};
 use itertools::Itertools;
 use log::warn;
 use parking_lot::RwLock;
@@ -17,11 +19,40 @@ use tap::TapFallible;
 
 use crate::errors::ConfigError;
 
-#[derive(Debug, Clone, Default)]
+pub type ProviderFactory = Arc<dyn Fn() -> Box<dyn Provider> + Send + Sync>;
+
+struct BoxedProvider(Box<dyn Provider>);
+impl Provider for BoxedProvider {
+    fn metadata(&self) -> Metadata {
+        self.0.metadata()
+    }
+
+    fn data(&self) -> Result<Map<Profile, Dict>, Error> {
+        self.0.data()
+    }
+
+    fn profile(&self) -> Option<Profile> {
+        self.0.profile()
+    }
+}
+
+#[derive(Clone)]
 pub struct Config {
+    factory: ProviderFactory,
     pub mode: Arc<Atomic<ApplyMode>>,
     pub interval: Arc<Atomic<Interval>>,
     pub walk: Arc<RwLock<WalkConfig>>,
+}
+
+impl Debug for Config {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Config")
+            .field("factory", &"<ProviderFactory>")
+            .field("mode", &self.mode)
+            .field("interval", &self.interval)
+            .field("walk", &self.walk)
+            .finish()
+    }
 }
 
 #[inline]
@@ -72,9 +103,16 @@ impl Config {
     /// `Figment` if error occurs when collecting config.
     /// `Rule` if rule name is referenced but not defined.
     /// `NotADirectory` if there's directory given but not found.
-    pub fn from(provider: impl Provider) -> Result<Self, ConfigError> {
+    pub fn from<F, P>(factory: F) -> Result<Self, ConfigError>
+    where
+        F: Fn() -> P + Send + Sync + 'static,
+        P: Provider + 'static,
+    {
+        let factory = move || Box::new((factory)()) as Box<dyn Provider>;
+        let provider = BoxedProvider((factory)());
         let pre_config = PreConfig::from(provider)?;
         Ok(Self {
+            factory: Arc::new(factory),
             mode: Arc::new(Atomic::new(pre_config.mode)),
             interval: Arc::new(Atomic::new(pre_config.interval)),
             walk: Arc::new(RwLock::new(WalkConfig::from(
@@ -91,7 +129,8 @@ impl Config {
     /// `Figment` if error occurs when collecting config.
     /// `Rule` if rule name is referenced but not defined.
     /// `NotADirectory` if there's directory given but not found.
-    pub fn reload(&self, provider: impl Provider) -> Result<(), ConfigError> {
+    pub fn reload(&self) -> Result<(), ConfigError> {
+        let provider = BoxedProvider((*self.factory)());
         let pre_config = PreConfig::from(provider)?;
         self.mode.store(pre_config.mode, Ordering::Relaxed);
         self.interval.store(pre_config.interval, Ordering::Relaxed);
@@ -357,7 +396,7 @@ mod test {
     #[test]
     fn must_parse_simple() {
         static SIMPLE: &str = include_str!("../tests/configs/simple.yaml");
-        let config = Config::from(Yaml::string(SIMPLE)).expect("must parse config");
+        let config = Config::from(|| Yaml::string(SIMPLE)).expect("must parse config");
 
         let rule_a = Rule {
             excludes: vec![path!("exclude_a")],
@@ -402,10 +441,15 @@ mod test {
     fn must_reload() {
         static SIMPLE: &str = include_str!("../tests/configs/simple.yaml");
         static SIMPLE_RELOADED: &str = include_str!("../tests/configs/simple_reload.yaml");
-        let config = Config::from(Yaml::string(SIMPLE)).expect("must parse config");
-        config
-            .reload(Yaml::string(SIMPLE_RELOADED))
-            .expect("must reload config");
+        let file = tempfile::NamedTempFile::new().expect("to be created");
+        let path = file.path().to_path_buf();
+
+        std::fs::write(file.path(), SIMPLE).expect("to succeed");
+        let provider = move || Yaml::file(path.clone());
+        let config = Config::from(provider).expect("must parse config");
+
+        std::fs::write(file.path(), SIMPLE_RELOADED).expect("to succeed");
+        config.reload().expect("must reload config");
 
         let rule_a = Rule {
             excludes: vec![path!("exclude_b")],
@@ -439,7 +483,7 @@ mod test {
     #[test]
     fn must_fail_broken_rule() {
         static BROKEN: &str = include_str!("../tests/configs/broken_rule.yaml");
-        let provider = Yaml::string(BROKEN);
+        let provider = || Yaml::string(BROKEN);
         let error = Config::from(provider).expect_err("must fail");
         match error {
             ConfigError::Rule(path) => assert_eq!(path, "a"),
@@ -450,7 +494,7 @@ mod test {
     #[test]
     fn must_fail_broken_dir() {
         static BROKEN: &str = include_str!("../tests/configs/broken_dir.yaml");
-        let provider = Yaml::string(BROKEN);
+        let provider = || Yaml::string(BROKEN);
         let error = Config::from(provider).expect_err("must fail");
 
         match error {
@@ -465,7 +509,7 @@ mod test {
     #[test]
     fn must_fail_missing_dir() {
         static BROKEN: &str = include_str!("../tests/configs/missing_dir.yaml");
-        let provider = Yaml::string(BROKEN);
+        let provider = || Yaml::string(BROKEN);
         let error = Config::from(provider).expect_err("must fail");
 
         match error {
@@ -480,7 +524,7 @@ mod test {
     #[test]
     fn must_allow_missing_skip_dir() {
         static BROKEN: &str = include_str!("../tests/configs/allow_missing_skip_dir.yaml");
-        let provider = Yaml::string(BROKEN);
+        let provider = || Yaml::string(BROKEN);
         assert_eq!(
             &*Config::from(provider)
                 .expect("must parse config")
