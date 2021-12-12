@@ -1,3 +1,7 @@
+//! Record application states and persist them to disk.
+//!
+//! Right now the only state recorded is the last processed event id.
+
 use std::fs::{File, OpenOptions};
 use std::io::{Seek, SeekFrom, Write};
 use std::path::Path;
@@ -19,8 +23,10 @@ const fn default_event_id() -> FSEventStreamEventId {
     kFSEventStreamEventIdSinceNow
 }
 
+/// Application state.
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct State {
+    /// The last processed event id. Used to restore watching fs events from where we left earlier.
     #[serde(default = "default_event_id")]
     pub last_event_id: FSEventStreamEventId,
 }
@@ -37,6 +43,7 @@ where
     }
 }
 
+/// Actor to persist application state to disk.
 pub struct PersistentState {
     f: File,
     state: State,
@@ -89,13 +96,6 @@ where
 }
 
 impl PersistentState {
-    #[must_use]
-    pub const fn state(&self) -> &State {
-        &self.state
-    }
-}
-
-impl PersistentState {
     /// Load a persistent state from given path.
     ///
     /// # Errors
@@ -137,7 +137,7 @@ impl PersistentState {
 
 impl Drop for PersistentState {
     fn drop(&mut self) {
-        self.flush();
+        drop(self.flush());
         drop(self.f.unlock());
     }
 }

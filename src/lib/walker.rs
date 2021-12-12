@@ -1,3 +1,4 @@
+//! Utils and actors to walk directories recursively (or not) and perform `TimeMachine` operations on demand.
 use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::fs;
@@ -19,6 +20,7 @@ use crate::tmutil::{is_excluded, ExclusionAction, ExclusionActionBatch};
 
 const CACHE_MAX_CAPACITY: usize = 512;
 
+/// Cache for skipped directories to avoid redundant syscall.
 #[derive(Clone)]
 pub struct SkipCache(Arc<Cache<PathBuf, ()>>);
 
@@ -54,12 +56,14 @@ impl Borrow<CachedPath> for Arc<PathBuf> {
     }
 }
 
+/// Actor to walk directories and perform `TimeMachine` operations on demand.
 pub struct Walker {
     config: Arc<RwLock<WalkConfig>>,
     skip_cache: SkipCache,
 }
 
 impl Walker {
+    /// Create a new instance.
     #[must_use]
     pub fn new(config: Arc<RwLock<WalkConfig>>, skip_cache: SkipCache) -> Self {
         Self { config, skip_cache }
@@ -70,6 +74,7 @@ impl Actor for Walker {
     type Context = SyncContext<Self>;
 }
 
+/// Invalidate all entries in the skip cache.
 #[derive(Debug, Copy, Clone, Message)]
 #[rtype("()")]
 pub struct InvalidateSkipCache;
@@ -86,8 +91,11 @@ impl Handler<InvalidateSkipCache> for Walker {
 #[derive(Debug, Clone, Eq, PartialEq, Message)]
 #[rtype("()")]
 pub struct Walk {
+    /// The root of the scan
     pub root: PathBuf,
+    /// Whether this walk is recursive or not.
     pub recursive: bool,
+    /// [`ApplyMode`](ApplyMode) of this walk.
     pub apply: ApplyMode,
 }
 

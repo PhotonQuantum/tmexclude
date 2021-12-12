@@ -1,3 +1,4 @@
+//! Utils needed to operate on `TimeMachine`.
 use std::borrow::Borrow;
 use std::ops::{Add, AddAssign};
 use std::path::{Path, PathBuf};

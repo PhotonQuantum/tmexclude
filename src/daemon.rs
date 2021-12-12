@@ -12,7 +12,7 @@ use itertools::Itertools;
 
 use tmexclude_lib::config::Config;
 use tmexclude_lib::persistent::PersistentState;
-use tmexclude_lib::walker::{SkipCache, Walker};
+use tmexclude_lib::walker::{InvalidateSkipCache, SkipCache, Walker};
 use tmexclude_lib::watcher::{RegisterWatcher, Watcher};
 
 use crate::utils::ensure_state_dir;
@@ -20,9 +20,11 @@ use crate::utils::ensure_state_dir;
 async fn reload(
     config: Data<Config>,
     watcher: Data<Addr<Watcher>>,
+    walker: Data<Addr<Walker>>,
 ) -> Result<&'static str, Box<dyn Error + 'static>> {
     config.reload()?;
 
+    walker.send(InvalidateSkipCache).await?;
     let paths = config
         .walk
         .read()

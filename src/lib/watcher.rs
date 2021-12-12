@@ -1,3 +1,4 @@
+//! Filesystem watcher.
 use std::collections::HashSet;
 use std::io::{Error, ErrorKind};
 use std::path::{Path, PathBuf};
@@ -20,6 +21,7 @@ use crate::config::ApplyMode;
 use crate::persistent::{GetState, PersistentState, SetStateWith};
 use crate::walker::{Walk, Walker};
 
+/// Filesystem watcher actor.
 pub struct Watcher {
     apply_mode: Arc<Atomic<ApplyMode>>,
     handler: Option<(SpawnHandle, EventStreamHandler)>,
@@ -64,7 +66,9 @@ impl Actor for Watcher {
 #[derive(Debug, Message)]
 #[rtype("std::io::Result<()>")]
 pub struct RegisterWatcher<I> {
+    /// Paths to be registered to the watcher
     pub paths: I,
+    /// Batch delay for filesystem events.
     pub interval: Duration,
 }
 

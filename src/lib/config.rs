@@ -1,3 +1,6 @@
+//! Defines all needed configs and views to them.
+//!
+//! The config is synchronized by design so it can be hot-reloaded.
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Formatter};
@@ -19,7 +22,7 @@ use tap::TapFallible;
 
 use crate::errors::ConfigError;
 
-pub type ProviderFactory = Arc<dyn Fn() -> Box<dyn Provider> + Send + Sync>;
+type ProviderFactory = Arc<dyn Fn() -> Box<dyn Provider> + Send + Sync>;
 
 struct BoxedProvider(Box<dyn Provider>);
 
@@ -37,11 +40,16 @@ impl Provider for BoxedProvider {
     }
 }
 
+/// Main config type used throughout the application.
 #[derive(Clone)]
 pub struct Config {
+    /// The factory used to construct a provider. Mainly used to reload configs.
     factory: ProviderFactory,
+    /// The apply mode this instance is working on.
     pub mode: Arc<Atomic<ApplyMode>>,
+    /// Rescan and watch intervals.
     pub interval: Arc<Atomic<Interval>>,
+    /// Configs related to walking, including interested directories and corresponding rules.
     pub walk: Arc<RwLock<WalkConfig>>,
 }
 
@@ -66,10 +74,13 @@ const fn rescan_interval_default() -> Duration {
     Duration::from_secs(86400)
 }
 
+/// Intervals that determine when to scan the filesystem.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Deserialize)]
 pub struct Interval {
+    /// Batch delay for filesystem events.
     #[serde(with = "humantime_serde", default = "watcher_interval_default")]
     pub watch: Duration,
+    /// Interval between whole filesystem rescans.
     #[serde(with = "humantime_serde", default = "rescan_interval_default")]
     pub rescan: Duration,
 }
@@ -83,11 +94,15 @@ impl Default for Interval {
     }
 }
 
+/// The apply mode for `TimeMachine` operations.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum ApplyMode {
+    /// Don't touch the system.
     DryRun,
+    /// Only add exclusions.
     AddOnly,
+    /// Add and remove exclusions.
     All,
 }
 
@@ -141,28 +156,39 @@ impl Config {
     }
 }
 
+/// Configs related to walking, including interested directories and corresponding rules.
 #[derive(Debug, Clone, Default, Eq, PartialEq)]
 pub struct WalkConfig {
+    /// Interested directories and corresponding rules.
     pub directories: Vec<Directory>,
+    /// Directories to be skipped when scanning and watching.
     pub skips: HashSet<PathBuf>,
 }
 
 /// A `CoW` view of [`WalkConfig`](WalkConfig).
 pub struct WalkConfigView<'a> {
+    /// A view to interested directories and corresponding rules.
     pub directories: Cow<'a, [Directory]>,
+    /// A view to directories to be skipped when scanning and watching.
     pub skips: Cow<'a, HashSet<PathBuf>>,
 }
 
+/// An interested directory and its corresponding rules.
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Directory {
+    /// The interested directory.
     pub path: PathBuf,
+    /// Rules bound to this directory.
     pub rules: Vec<Rule>,
 }
 
+/// Rules to be applied on a specific set of directories.
 #[derive(Debug, Clone, Deserialize, Eq, PartialEq, Hash, Default)]
 #[serde(rename_all = "kebab-case")]
 pub struct Rule {
+    /// Paths to be excluded.
     pub excludes: Vec<PathBuf>,
+    /// Exclude paths if *any* of these paths exist in the same directory as the path to be excluded.
     #[serde(default)]
     pub if_exists: Vec<PathBuf>,
 }
@@ -187,7 +213,7 @@ fn max_common_path(path_1: impl AsRef<Path>, path_2: impl AsRef<Path>) -> PathBu
     }
 }
 
-// Squash nested directory paths.
+/// Squash nested directory paths.
 fn get_paths(directories: &[Directory]) -> HashSet<&Path> {
     directories
         .iter()
@@ -203,7 +229,7 @@ fn get_paths(directories: &[Directory]) -> HashSet<&Path> {
         })
 }
 
-// Get common root of all directories.
+/// Get common root of all directories.
 fn get_root(directories: &[Directory]) -> Option<PathBuf> {
     directories
         .iter()
@@ -299,6 +325,9 @@ impl WalkConfigView<'_> {
         get_paths(self.directories.as_ref())
     }
 
+    /// Extracts the owned data.
+    ///
+    /// Clones the data if it is not already owned.
     #[must_use]
     pub fn into_owned(self) -> WalkConfig {
         WalkConfig {
