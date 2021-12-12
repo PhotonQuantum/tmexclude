@@ -7,7 +7,7 @@ use actix::dev::{MessageResponse, OneshotSender};
 use actix::{Actor, AsyncContext, Context, Handler, Message};
 use fs3::FileExt;
 use fsevent_stream::ffi::{kFSEventStreamEventIdSinceNow, FSEventStreamEventId};
-use log::{debug, error};
+use log::{debug, error, info};
 use serde::{Deserialize, Serialize};
 
 use crate::errors::PersistentError;
@@ -129,6 +129,7 @@ impl PersistentState {
         self.f.seek(SeekFrom::Start(0))?;
         serde_json::to_writer(&self.f, &self.state)?;
         self.dirty = false;
+        info!("flushed persistent state to disk");
 
         Ok(())
     }
@@ -136,6 +137,7 @@ impl PersistentState {
 
 impl Drop for PersistentState {
     fn drop(&mut self) {
+        self.flush();
         drop(self.f.unlock());
     }
 }
