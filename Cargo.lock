@@ -804,9 +804,9 @@ dependencies = [
 
 [[package]]
 name = "fsevent-stream"
-version = "0.2.1"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "53f45371a19be32301a5273fbd4c1f58c34bedc25ba0463e06e918ca5b0ec4f9"
+checksum = "4c08b44028a8b0c0ff2db3a6d4f1b56f910f0a4d3f0f8218d3ec33d22d167a12"
 dependencies = [
  "bitflags",
  "core-foundation",
