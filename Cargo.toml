@@ -18,7 +18,7 @@ actix = "0.12"
 actix-rt = "2.5"
 actix-web = "4.0.0-beta.15"
 atomic = "0.5"
-clap = { version = "3.0.0-rc.8", features = ["derive"] }
+clap = { version = "3.0.0-rc.9", features = ["derive"] }
 color-eyre = "0.5"
 core-foundation = { version = "0.9", features = ["mac_os_10_8_features"] }
 crossbeam-queue = "0.3"
