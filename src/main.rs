@@ -49,11 +49,11 @@ fn collect_config(path: Option<PathBuf>, args: &Args) -> Result<Config> {
         dict
     });
 
-    Ok(Config::from(move || {
+    Ok(Config::from(
         Figment::new()
-            .merge(FlexiProvider::from(path.clone()))
-            .merge(adhoc.clone())
-    })?)
+            .merge(FlexiProvider::from(path))
+            .merge(adhoc)
+    )?)
 }
 
 fn daemon(config: Config, addr: Option<PathBuf>) -> Result<()> {

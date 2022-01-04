@@ -2,15 +2,15 @@
 use std::collections::HashSet;
 use std::io::{Error, ErrorKind};
 use std::path::{Path, PathBuf};
-use std::sync::atomic::Ordering;
-use std::sync::Arc;
+
+
 use std::time::Duration;
 
 use actix::{
     Actor, ActorFutureExt, Addr, AsyncContext, Context, Handler, Message, ResponseActFuture,
     SpawnHandle, StreamHandler, WrapFuture,
 };
-use atomic::Atomic;
+
 use fsevent_stream::ffi::{kFSEventStreamCreateFlagIgnoreSelf, kFSEventStreamEventIdSinceNow};
 use fsevent_stream::flags::StreamFlags;
 use fsevent_stream::stream::{create_event_stream, Event, EventStreamHandler};
@@ -23,7 +23,7 @@ use crate::walker::{Walk, Walker};
 
 /// Filesystem watcher actor.
 pub struct Watcher {
-    apply_mode: Arc<Atomic<ApplyMode>>,
+    apply_mode: ApplyMode,
     handler: Option<(SpawnHandle, EventStreamHandler)>,
     historical_path: Option<HashSet<PathBuf>>,
     state: Addr<PersistentState>,
@@ -33,8 +33,8 @@ pub struct Watcher {
 impl Watcher {
     /// Create a new watcher actor instance.
     #[must_use]
-    pub fn new(
-        apply_mode: Arc<Atomic<ApplyMode>>,
+    pub const fn new(
+        apply_mode: ApplyMode,
         state: Addr<PersistentState>,
         walker: Addr<Walker>,
     ) -> Self {
@@ -181,7 +181,7 @@ impl StreamHandler<Vec<Event>> for Watcher {
             }));
         }
 
-        let apply = self.apply_mode.load(Ordering::Relaxed);
+        let apply = self.apply_mode;
         match consume_event_batch(&mut self.historical_path, item) {
             ConsumeState::History(HistoryState::Finished(remaining_events)) => {
                 for path in self.historical_path.take().expect("to exist") {

@@ -12,7 +12,7 @@ use itertools::Itertools;
 use jwalk::WalkDirGeneric;
 use log::{debug, info, warn};
 use moka::sync::Cache;
-use parking_lot::RwLock;
+
 use tap::TapFallible;
 
 use crate::config::{ApplyMode, Directory, Rule, WalkConfig, WalkConfigView};
@@ -58,14 +58,14 @@ impl Borrow<CachedPath> for Arc<PathBuf> {
 
 /// Actor to walk directories and perform `TimeMachine` operations on demand.
 pub struct Walker {
-    config: Arc<RwLock<WalkConfig>>,
+    config: WalkConfig,
     skip_cache: SkipCache,
 }
 
 impl Walker {
     /// Create a new instance.
     #[must_use]
-    pub fn new(config: Arc<RwLock<WalkConfig>>, skip_cache: SkipCache) -> Self {
+    pub const fn new(config: WalkConfig, skip_cache: SkipCache) -> Self {
         Self { config, skip_cache }
     }
 }
@@ -105,7 +105,7 @@ impl Handler<Walk> for Walker {
     fn handle(&mut self, msg: Walk, _ctx: &mut Self::Context) -> Self::Result {
         let batch = walk(
             msg.root,
-            &*self.config.read(),
+            &self.config,
             msg.recursive,
             &*self.skip_cache,
         );
