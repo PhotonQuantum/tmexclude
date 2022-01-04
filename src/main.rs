@@ -50,9 +50,7 @@ fn collect_config(path: Option<PathBuf>, args: &Args) -> Result<Config> {
     });
 
     Ok(Config::from(
-        Figment::new()
-            .merge(FlexiProvider::from(path))
-            .merge(adhoc)
+        Figment::new().merge(FlexiProvider::from(path)).merge(adhoc),
     )?)
 }
 

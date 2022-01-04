@@ -103,12 +103,7 @@ impl Handler<Walk> for Walker {
     type Result = ();
 
     fn handle(&mut self, msg: Walk, _ctx: &mut Self::Context) -> Self::Result {
-        let batch = walk(
-            msg.root,
-            &self.config,
-            msg.recursive,
-            &*self.skip_cache,
-        );
+        let batch = walk(msg.root, &self.config, msg.recursive, &*self.skip_cache);
         if batch.is_empty() {
             return;
         }

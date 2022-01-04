@@ -3,14 +3,12 @@
 //! The config is synchronized by design so it can be hot-reloaded.
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
-use std::fmt::{Debug};
+use std::fmt::Debug;
 use std::io::ErrorKind;
 use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 
-
 use std::time::Duration;
-
 
 use figment::{Figment, Provider};
 use itertools::Itertools;
@@ -87,17 +85,12 @@ impl Config {
     /// `Figment` if error occurs when collecting config.
     /// `Rule` if rule name is referenced but not defined.
     /// `NotADirectory` if there's directory given but not found.
-    pub fn from(provider: impl Provider) -> Result<Self, ConfigError>
-    {
+    pub fn from(provider: impl Provider) -> Result<Self, ConfigError> {
         let pre_config = PreConfig::from(provider)?;
         Ok(Self {
             mode: pre_config.mode,
             interval: pre_config.interval,
-            walk: WalkConfig::from(
-                pre_config.directories,
-                &pre_config.rules,
-                pre_config.skips,
-            )?,
+            walk: WalkConfig::from(pre_config.directories, &pre_config.rules, pre_config.skips)?,
         })
     }
 }
@@ -332,7 +325,7 @@ mod test {
     use std::io::ErrorKind;
     use std::path::{Path, PathBuf};
     use std::str::FromStr;
-    
+
     use std::time::Duration;
 
     use figment::providers::{Format, Yaml};
@@ -459,9 +452,7 @@ mod test {
         static BROKEN: &str = include_str!("../../tests/configs/allow_missing_skip_dir.yaml");
         let provider = Yaml::string(BROKEN);
         assert_eq!(
-            Config::from(provider)
-                .expect("must parse config")
-                .walk,
+            Config::from(provider).expect("must parse config").walk,
             WalkConfig::default()
         );
     }

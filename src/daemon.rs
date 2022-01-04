@@ -1,20 +1,16 @@
 #![allow(clippy::future_not_send)]
 
-
 use std::path::Path;
-
 
 use actix::{Actor, SyncArbiter};
 use actix_web::web::Data;
 use actix_web::{App, HttpServer};
-use eyre::{Result};
+use eyre::Result;
 use itertools::Itertools;
 
 use tmexclude_lib::config::Config;
 use tmexclude_lib::walker::{SkipCache, Walker};
 use tmexclude_lib::watcher::{RegisterWatcher, Watcher};
-
-
 
 pub async fn app(config: Config, addr: impl AsRef<Path>) -> Result<()> {
     let walker_skip_cache = SkipCache::default();

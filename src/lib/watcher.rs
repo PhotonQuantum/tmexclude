@@ -1,18 +1,12 @@
 //! Filesystem watcher.
 
-
-use std::path::{Path};
+use std::path::Path;
 use std::time::Duration;
 
-use actix::{
-    Actor, Addr, AsyncContext, Context, Handler, Message,
-    SpawnHandle, StreamHandler,
-};
+use actix::{Actor, Addr, AsyncContext, Context, Handler, Message, SpawnHandle, StreamHandler};
 use fsevent_stream::ffi::{kFSEventStreamCreateFlagIgnoreSelf, kFSEventStreamEventIdSinceNow};
 
 use fsevent_stream::stream::{create_event_stream, Event, EventStreamHandler};
-
-
 
 use crate::config::ApplyMode;
 use crate::walker::{Walk, Walker};
@@ -27,10 +21,7 @@ pub struct Watcher {
 impl Watcher {
     /// Create a new watcher actor instance.
     #[must_use]
-    pub const fn new(
-        apply_mode: ApplyMode,
-        walker: Addr<Walker>,
-    ) -> Self {
+    pub const fn new(apply_mode: ApplyMode, walker: Addr<Walker>) -> Self {
         Self {
             apply_mode,
             handler: None,
@@ -64,9 +55,9 @@ pub struct RegisterWatcher<I> {
 }
 
 impl<I, P> Handler<RegisterWatcher<I>> for Watcher
-    where
-        I: IntoIterator<Item=P> + 'static,
-        P: AsRef<Path>,
+where
+    I: IntoIterator<Item = P> + 'static,
+    P: AsRef<Path>,
 {
     type Result = std::io::Result<()>;
 
