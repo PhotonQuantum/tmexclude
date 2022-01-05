@@ -18,7 +18,7 @@ use tap::TapFallible;
 use crate::config::{ApplyMode, Directory, Rule, WalkConfig, WalkConfigView};
 use crate::tmutil::{is_excluded, ExclusionAction, ExclusionActionBatch};
 
-const CACHE_MAX_CAPACITY: usize = 512;
+const CACHE_MAX_CAPACITY: u64 = 512;
 
 /// Cache for skipped directories to avoid redundant syscall.
 #[derive(Clone)]
