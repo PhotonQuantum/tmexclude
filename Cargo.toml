@@ -16,7 +16,7 @@ path = "./src/lib/lib.rs"
 [dependencies]
 actix = "0.12"
 actix-rt = "2.5"
-actix-web = "4.0.0-beta.18"
+actix-web = "4.0.0-beta.19"
 atomic = "0.5"
 clap = { version = "3.0.1", features = ["derive"] }
 color-eyre = "0.5"
