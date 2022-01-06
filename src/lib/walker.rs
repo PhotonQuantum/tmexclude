@@ -12,10 +12,9 @@ use itertools::Itertools;
 use jwalk::WalkDirGeneric;
 use log::{debug, info, warn};
 use moka::sync::Cache;
-
 use tap::TapFallible;
 
-use crate::config::{ApplyMode, Directory, Rule, WalkConfig, WalkConfigView};
+use crate::config::{ApplyMode, Directory, Rule, WalkConfig};
 use crate::tmutil::{is_excluded, ExclusionAction, ExclusionActionBatch};
 
 const CACHE_MAX_CAPACITY: u64 = 512;
@@ -118,27 +117,27 @@ impl Handler<Walk> for Walker {
 
 /// Walk through a directory with given rules and return an exclusion action plan.
 #[must_use]
-pub fn walk<'a, 'b>(
-    root: impl AsRef<Path> + 'a,
-    config: impl Into<WalkConfigView<'b>>,
+pub fn walk(
+    root: impl AsRef<Path>,
+    config: &WalkConfig,
     recursive: bool,
-    skip_cache: &'a Cache<PathBuf, ()>,
+    skip_cache: &Cache<PathBuf, ()>,
 ) -> ExclusionActionBatch {
     let root = root.as_ref();
-    let config = config.into();
+    let config = config;
     if recursive {
         walk_recursive(root, config)
     } else {
-        walk_non_recursive(root, &config, skip_cache)
+        walk_non_recursive(root, config, skip_cache)
     }
 }
 
-fn walk_recursive(root: &Path, config: WalkConfigView) -> ExclusionActionBatch {
+fn walk_recursive(root: &Path, config: &WalkConfig) -> ExclusionActionBatch {
     let batch_queue = Arc::new(SegQueue::new());
     {
         let batch_queue = batch_queue.clone();
         WalkDirGeneric::<(WalkConfig, ())>::new(root)
-            .root_read_dir_state(config.into_owned())
+            .root_read_dir_state(config.clone())
             .skip_hidden(false)
             .process_read_dir(move |_, path, config, children| {
                 // Remove effect-less directories & skips.
@@ -206,7 +205,7 @@ fn walk_recursive(root: &Path, config: WalkConfigView) -> ExclusionActionBatch {
 
 fn walk_non_recursive(
     root: &Path,
-    config: &WalkConfigView,
+    config: &WalkConfig,
     skip_cache: &Cache<PathBuf, ()>,
 ) -> ExclusionActionBatch {
     if skip_cache.get::<CachedPath>(root.into()).is_some() {
@@ -215,8 +214,7 @@ fn walk_non_recursive(
         return ExclusionActionBatch::default();
     }
 
-    let skips = config.skips.as_ref();
-    if skips.iter().any(|skip| root.starts_with(skip)) {
+    if config.skips.iter().any(|skip| root.starts_with(skip)) {
         // The directory should be skipped.
         skip_cache.insert(root.to_path_buf(), ());
         return ExclusionActionBatch::default();
@@ -224,7 +222,6 @@ fn walk_non_recursive(
 
     let mut directories = config
         .directories
-        .as_ref()
         .iter()
         .filter(|directory| root.starts_with(&directory.path) || directory.path.starts_with(root))
         .peekable();
@@ -254,7 +251,7 @@ fn walk_non_recursive(
                 })
                 .filter_map(|entry| {
                     let path = entry.path();
-                    if (&*config.skips).contains(&path) {
+                    if config.skips.contains(&path) {
                         // Skip this entry in all preceding procedures and scans.
                         None
                     } else {

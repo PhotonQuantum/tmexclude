@@ -5,7 +5,6 @@ use std::time::Duration;
 
 use actix::{Actor, Addr, AsyncContext, Context, Handler, Message, SpawnHandle, StreamHandler};
 use fsevent_stream::ffi::{kFSEventStreamCreateFlagIgnoreSelf, kFSEventStreamEventIdSinceNow};
-
 use fsevent_stream::stream::{create_event_stream, Event, EventStreamHandler};
 
 use crate::config::ApplyMode;

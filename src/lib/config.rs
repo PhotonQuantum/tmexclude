@@ -1,19 +1,16 @@
 //! Defines all needed configs and views to them.
 //!
 //! The config is synchronized by design so it can be hot-reloaded.
-use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::io::ErrorKind;
 use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
-
 use std::time::Duration;
 
 use figment::{Figment, Provider};
 use itertools::Itertools;
 use log::warn;
-
 use serde::Deserialize;
 use tap::TapFallible;
 
@@ -102,14 +99,6 @@ pub struct WalkConfig {
     pub directories: Vec<Directory>,
     /// Directories to be skipped when scanning and watching.
     pub skips: HashSet<PathBuf>,
-}
-
-/// A `CoW` view of [`WalkConfig`](WalkConfig).
-pub struct WalkConfigView<'a> {
-    /// A view to interested directories and corresponding rules.
-    pub directories: Cow<'a, [Directory]>,
-    /// A view to directories to be skipped when scanning and watching.
-    pub skips: Cow<'a, HashSet<PathBuf>>,
 }
 
 /// An interested directory and its corresponding rules.
@@ -251,49 +240,6 @@ impl WalkConfig {
     }
 }
 
-impl WalkConfigView<'_> {
-    /// Get common root of all directories.
-    #[must_use]
-    pub fn root(&self) -> Option<PathBuf> {
-        get_root(self.directories.as_ref())
-    }
-
-    /// Squash nested directory paths.
-    #[must_use]
-    pub fn paths(&self) -> HashSet<&Path> {
-        get_paths(self.directories.as_ref())
-    }
-
-    /// Extracts the owned data.
-    ///
-    /// Clones the data if it is not already owned.
-    #[must_use]
-    pub fn into_owned(self) -> WalkConfig {
-        WalkConfig {
-            directories: self.directories.into_owned(),
-            skips: self.skips.into_owned(),
-        }
-    }
-}
-
-impl From<WalkConfig> for WalkConfigView<'static> {
-    fn from(c: WalkConfig) -> Self {
-        Self {
-            directories: c.directories.into(),
-            skips: Cow::Owned(c.skips),
-        }
-    }
-}
-
-impl<'a> From<&'a WalkConfig> for WalkConfigView<'a> {
-    fn from(c: &'a WalkConfig) -> Self {
-        Self {
-            directories: (&c.directories).into(),
-            skips: Cow::Borrowed(&c.skips),
-        }
-    }
-}
-
 #[derive(Deserialize)]
 struct PreConfig {
     #[serde(default)]
@@ -325,7 +271,6 @@ mod test {
     use std::io::ErrorKind;
     use std::path::{Path, PathBuf};
     use std::str::FromStr;
-
     use std::time::Duration;
 
     use figment::providers::{Format, Yaml};
