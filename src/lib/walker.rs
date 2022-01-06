@@ -6,7 +6,7 @@ use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use actix::{Actor, Handler, Message, SyncContext};
+use actix::{Actor, Context, Handler, Message};
 use crossbeam_queue::SegQueue;
 use itertools::Itertools;
 use jwalk::WalkDirGeneric;
@@ -70,20 +70,7 @@ impl Walker {
 }
 
 impl Actor for Walker {
-    type Context = SyncContext<Self>;
-}
-
-/// Invalidate all entries in the skip cache.
-#[derive(Debug, Copy, Clone, Message)]
-#[rtype("()")]
-pub struct InvalidateSkipCache;
-
-impl Handler<InvalidateSkipCache> for Walker {
-    type Result = ();
-
-    fn handle(&mut self, _msg: InvalidateSkipCache, _ctx: &mut Self::Context) -> Self::Result {
-        self.skip_cache.invalidate_all();
-    }
+    type Context = Context<Self>;
 }
 
 /// Walk through a directory with given rules and apply the plan.

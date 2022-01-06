@@ -1,6 +1,6 @@
 //! Filesystem watcher.
 
-use std::path::Path;
+use std::path::PathBuf;
 use std::time::Duration;
 
 use actix::{Actor, Addr, AsyncContext, Context, Handler, Message, SpawnHandle, StreamHandler};
@@ -46,21 +46,18 @@ impl Actor for Watcher {
 /// Return io error if there are invalid paths in `paths` argument.
 #[derive(Debug, Message)]
 #[rtype("std::io::Result<()>")]
-pub struct RegisterWatcher<I> {
+pub struct RegisterWatcher {
     /// Paths to be registered to the watcher
-    pub paths: I,
+    pub paths: Vec<PathBuf>,
     /// Batch delay for filesystem events.
     pub interval: Duration,
 }
 
-impl<I, P> Handler<RegisterWatcher<I>> for Watcher
-where
-    I: IntoIterator<Item = P> + 'static,
-    P: AsRef<Path>,
-{
+impl Handler<RegisterWatcher> for Watcher {
     type Result = std::io::Result<()>;
 
-    fn handle(&mut self, msg: RegisterWatcher<I>, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: RegisterWatcher, ctx: &mut Self::Context) -> Self::Result {
+        // TODO exclude path (need modify fsevent_stream)
         let (stream, event_handle) = create_event_stream(
             msg.paths,
             kFSEventStreamEventIdSinceNow,
