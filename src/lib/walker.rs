@@ -86,7 +86,7 @@ impl Handler<InvalidateSkipCache> for Walker {
     }
 }
 
-/// Walk through a directory with given rules and return an exclusion action plan.
+/// Walk through a directory with given rules and apply the plan.
 #[derive(Debug, Clone, Eq, PartialEq, Message)]
 #[rtype("()")]
 pub struct Walk {
@@ -102,7 +102,7 @@ impl Handler<Walk> for Walker {
     type Result = ();
 
     fn handle(&mut self, msg: Walk, _ctx: &mut Self::Context) -> Self::Result {
-        let batch = walk(msg.root, &self.config, msg.recursive, &*self.skip_cache);
+        let batch = walk_non_recursive(&*msg.root, &self.config, &*self.skip_cache);
         if batch.is_empty() {
             return;
         }
@@ -115,29 +115,14 @@ impl Handler<Walk> for Walker {
     }
 }
 
-/// Walk through a directory with given rules and return an exclusion action plan.
+/// Walk through a directory with given rules recursively and return an exclusion action plan.
 #[must_use]
-pub fn walk(
-    root: impl AsRef<Path>,
-    config: &WalkConfig,
-    recursive: bool,
-    skip_cache: &Cache<PathBuf, ()>,
-) -> ExclusionActionBatch {
-    let root = root.as_ref();
-    let config = config;
-    if recursive {
-        walk_recursive(root, config)
-    } else {
-        walk_non_recursive(root, config, skip_cache)
-    }
-}
-
-fn walk_recursive(root: &Path, config: &WalkConfig) -> ExclusionActionBatch {
+pub fn walk_recursive(root: &Path, config: WalkConfig) -> ExclusionActionBatch {
     let batch_queue = Arc::new(SegQueue::new());
     {
         let batch_queue = batch_queue.clone();
-        WalkDirGeneric::<(WalkConfig, ())>::new(root)
-            .root_read_dir_state(config.clone())
+        WalkDirGeneric::<(_, ())>::new(root)
+            .root_read_dir_state(config)
             .skip_hidden(false)
             .process_read_dir(move |_, path, config, children| {
                 // Remove effect-less directories & skips.
@@ -203,7 +188,9 @@ fn walk_recursive(root: &Path, config: &WalkConfig) -> ExclusionActionBatch {
     actions
 }
 
-fn walk_non_recursive(
+/// Walk through a directory with given rules non-recursively and return an exclusion action plan.
+#[must_use]
+pub fn walk_non_recursive(
     root: &Path,
     config: &WalkConfig,
     skip_cache: &Cache<PathBuf, ()>,
