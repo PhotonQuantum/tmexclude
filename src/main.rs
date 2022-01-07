@@ -1,21 +1,25 @@
 use std::error::Error;
-use std::io;
 use std::io::ErrorKind;
 use std::path::PathBuf;
+use std::{fs, io};
 
 use actix::Actor;
 use actix_rt::System;
 use clap::Parser;
+use color_eyre::Section;
 use directories::UserDirs;
-use eyre::Result;
+use eyre::{Result, WrapErr};
 use figment::value::Dict;
 use figment::{Figment, Provider};
 
 use tmexclude_lib::daemon::Daemon;
+use tmexclude_lib::rpc;
+use tmexclude_lib::rpc::client::Client;
 use tmexclude_lib::rpc::server::start_server;
+use tmexclude_lib::rpc::Request;
 use tmexclude_lib::utils::TypeEq;
 
-use crate::args::{Arg, Command, DaemonArgs};
+use crate::args::{Arg, ClientCommand, Command, DaemonArgs};
 use crate::utils::{ensure_state_dir, AdhocProvider, FlexiProvider};
 
 mod args;
@@ -34,6 +38,28 @@ fn main() -> Result<()> {
             daemon(provider, uds)
         }
         Command::Scan(_) => unimplemented!(),
+        Command::Client(cmd) => {
+            let req = match cmd {
+                ClientCommand::Pause(_) => Request {
+                    command: rpc::Command::Pause,
+                },
+                ClientCommand::Reload(_) => Request {
+                    command: rpc::Command::Reload,
+                },
+                ClientCommand::Restart(_) => Request {
+                    command: rpc::Command::Restart,
+                },
+                ClientCommand::Shutdown(_) => Request {
+                    command: rpc::Command::Shutdown,
+                },
+            };
+            let args = cmd.args();
+            talk(req, args.uds.as_ref().cloned())
+                .wrap_err("Unable to talk to daemon")
+                .suggestion(
+                    "check if the daemon is running, or whether the given path to socket exists",
+                )
+        }
     }
 }
 
@@ -63,20 +89,42 @@ fn collect_provider(path: Option<PathBuf>, args: &Arg) -> io::Result<Figment> {
     Ok(Figment::new().merge(FlexiProvider::from(path)).merge(adhoc))
 }
 
-fn daemon<F, O, E, P>(provider: F, addr: Option<PathBuf>) -> Result<()>
+fn ensure_uds_path(maybe_uds: Option<PathBuf>, cleanup: bool) -> Result<PathBuf> {
+    let path = match maybe_uds {
+        None => ensure_state_dir()?.join("daemon.sock"),
+        Some(path) => path,
+    };
+    if cleanup {
+        fs::remove_file(&path).or_else(|e| {
+            if e.kind() == ErrorKind::NotFound {
+                Ok(())
+            } else {
+                Err(e)
+            }
+        })?;
+    }
+    Ok(path)
+}
+
+fn talk(req: Request, uds: Option<PathBuf>) -> Result<()> {
+    System::new().block_on(async move {
+        let mut client = Client::connect(ensure_uds_path(uds, false)?).await?;
+        let resp = client.send(req).await?;
+        println!("{:#?}", resp);
+        Ok(())
+    })
+}
+
+fn daemon<F, O, E, P>(provider: F, uds: Option<PathBuf>) -> Result<()>
 where
     F: Fn() -> O + Unpin + 'static,
     O: TypeEq<Rhs = Result<P, E>>,
     E: 'static + Error + Send + Sync,
     P: Provider,
 {
-    let path = match addr {
-        None => ensure_state_dir()?.join("daemon.sock"),
-        Some(path) => path,
-    };
     System::new().block_on(async move {
         let daemon = Daemon::new(provider)?;
         let addr = daemon.start();
-        Ok(start_server(path, addr).await?)
+        Ok(start_server(ensure_uds_path(uds, true)?, addr).await?)
     })
 }

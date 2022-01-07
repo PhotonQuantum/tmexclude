@@ -1,23 +1,33 @@
 //! RPC facilities.
 use serde::{Deserialize, Serialize};
 
+/// Represents an RPC request.
 #[derive(Debug, Serialize, Deserialize)]
-struct Request {
-    command: Command,
+pub struct Request {
+    /// RPC command.
+    pub command: Command,
 }
 
+/// An RPC command.
 #[derive(Debug, Serialize, Deserialize)]
-enum Command {
+pub enum Command {
+    /// Pause daemon.
     Pause,
+    /// Reload config and restart daemon.
     Reload,
+    /// Restart daemon. This method doesn't reload config.
     Restart,
+    /// Terminate daemon.
     Shutdown,
 }
 
+/// Represents an RPC response.
 #[derive(Debug, Serialize, Deserialize)]
-struct Response {
-    success: bool,
-    msg: Option<String>,
+pub struct Response {
+    /// If the call is success or not.
+    pub success: bool,
+    /// Supplemental messages.
+    pub msg: Option<String>,
 }
 
 pub mod server {
@@ -146,5 +156,56 @@ pub mod server {
                 });
             }
         })
+    }
+}
+
+pub mod client {
+    //! RPC client.
+    use std::io;
+    use std::io::ErrorKind;
+    use std::path::PathBuf;
+
+    use futures_util::{SinkExt, StreamExt};
+    use tokio::net::UnixStream;
+    use tokio_serde::formats::Bincode;
+    use tokio_serde::Framed as SerdeFramed;
+    use tokio_util::codec::{Framed, LengthDelimitedCodec};
+
+    use crate::rpc::{Request, Response};
+
+    type RawFrame = Framed<UnixStream, LengthDelimitedCodec>;
+    type Codec = Bincode<Response, Request>;
+    type Frame = SerdeFramed<RawFrame, Response, Request, Codec>;
+
+    /// RPC client.
+    pub struct Client {
+        stream: Frame,
+    }
+
+    impl Client {
+        /// Connect to given uds.
+        ///
+        /// # Errors
+        /// `io::Error` if fails to connect to given uds.
+        pub async fn connect(uds: PathBuf) -> io::Result<Self> {
+            let raw = UnixStream::connect(uds).await?;
+            Ok(Self {
+                stream: SerdeFramed::new(
+                    Framed::new(raw, LengthDelimitedCodec::new()),
+                    Bincode::<Response, Request>::default(),
+                ),
+            })
+        }
+        /// Send a message and get its result.
+        ///
+        /// # Errors
+        /// `io::Error` if unable to send
+        pub async fn send(&mut self, msg: Request) -> io::Result<Response> {
+            self.stream.send(msg).await?;
+            self.stream
+                .next()
+                .await
+                .ok_or_else(|| io::Error::from(ErrorKind::ConnectionAborted))?
+        }
     }
 }

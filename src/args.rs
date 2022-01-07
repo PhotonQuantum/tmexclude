@@ -27,11 +27,43 @@ pub enum Command {
     Daemon(DaemonArgs),
     /// Perform a full scan and set the exclusion flag to your files.
     Scan(ScanArgs),
+    #[clap(flatten)]
+    Client(ClientCommand),
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ClientCommand {
+    /// Pause daemon.
+    Pause(ClientArgs),
+    /// Reload config and restart daemon.
+    Reload(ClientArgs),
+    /// Restart daemon. This method doesn't reload config.
+    Restart(ClientArgs),
+    /// Shutdown daemon.
+    Shutdown(ClientArgs),
+}
+
+impl ClientCommand {
+    pub const fn args(&self) -> &ClientArgs {
+        match self {
+            ClientCommand::Pause(a)
+            | ClientCommand::Reload(a)
+            | ClientCommand::Restart(a)
+            | ClientCommand::Shutdown(a) => a,
+        }
+    }
 }
 
 #[derive(Debug, Args)]
 pub struct DaemonArgs {
     /// Bind to this Unix domain socket.
+    #[clap(short, long)]
+    pub uds: Option<PathBuf>,
+}
+
+#[derive(Debug, Args)]
+pub struct ClientArgs {
+    /// Connect through this Unix domain socket.
     #[clap(short, long)]
     pub uds: Option<PathBuf>,
 }
