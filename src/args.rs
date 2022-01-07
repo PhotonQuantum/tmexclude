@@ -1,7 +1,8 @@
+#![allow(clippy::module_name_repetitions)]
+
 use std::path::PathBuf;
 
 use clap::{AppSettings, Args, Parser, Subcommand};
-use tmexclude_lib::daemon::Daemon;
 
 #[derive(Debug, Parser)]
 #[clap(about, version, author, setting(AppSettings::PropagateVersion))]

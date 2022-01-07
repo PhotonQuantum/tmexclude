@@ -1,5 +1,6 @@
 //! Error types.
 use std::error::Error;
+
 use thiserror::Error;
 
 /// Error that may occur when loading a config.

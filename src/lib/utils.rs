@@ -1,5 +1,5 @@
-#[allow(missing_docs)]
-#[doc(hidden)]
+#![allow(missing_docs)]
+
 pub trait TypeEq {
     type Rhs;
     fn cast(self) -> Self::Rhs;

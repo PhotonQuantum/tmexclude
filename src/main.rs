@@ -1,16 +1,18 @@
-use actix::Actor;
-use actix_rt::System;
 use std::error::Error;
+use std::io;
+use std::io::ErrorKind;
 use std::path::PathBuf;
 
+use actix::Actor;
+use actix_rt::System;
 use clap::Parser;
 use directories::UserDirs;
-use eyre::{bail, eyre, Result};
+use eyre::Result;
 use figment::value::Dict;
 use figment::{Figment, Provider};
 
-use tmexclude_lib::config::Config;
 use tmexclude_lib::daemon::Daemon;
+use tmexclude_lib::rpc::server::start_server;
 use tmexclude_lib::utils::TypeEq;
 
 use crate::args::{Arg, Command, DaemonArgs};
@@ -31,19 +33,14 @@ fn main() -> Result<()> {
             let provider = move || collect_provider(args.config.clone(), &args);
             daemon(provider, uds)
         }
-        _ => unimplemented!(),
+        Command::Scan(_) => unimplemented!(),
     }
 }
-use std::io;
-use std::io::ErrorKind;
 
 fn collect_provider(path: Option<PathBuf>, args: &Arg) -> io::Result<Figment> {
     let path = match path {
         None => UserDirs::new()
-            .ok_or(io::Error::new(
-                ErrorKind::NotFound,
-                "Home directory not found",
-            ))?
+            .ok_or_else(|| io::Error::new(ErrorKind::NotFound, "Home directory not found"))?
             .home_dir()
             .join(".tmexclude.yaml"),
         Some(path) => path,
@@ -80,6 +77,6 @@ where
     System::new().block_on(async move {
         let daemon = Daemon::new(provider)?;
         let addr = daemon.start();
-        todo!()
+        Ok(start_server(path, addr).await?)
     })
 }
