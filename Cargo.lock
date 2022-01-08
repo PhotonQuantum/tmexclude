@@ -1447,7 +1447,6 @@ dependencies = [
  "moka",
  "parking_lot",
  "pretty_env_logger",
- "rayon",
  "serde",
  "serde_json",
  "shellexpand",

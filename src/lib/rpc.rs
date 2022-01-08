@@ -42,7 +42,7 @@ pub mod server {
     use actix_rt::System;
     use figment::Provider;
     use futures_util::{SinkExt, StreamExt};
-    use log::{debug, info, warn};
+    use log::{info, warn};
     use tokio::sync::mpsc::unbounded_channel;
     use tokio_serde::formats::Bincode;
     use tokio_serde::Framed as SerdeFramed;
@@ -69,7 +69,7 @@ pub mod server {
         loop {
             tokio::select! {
                 Ok((stream, _)) = listener.accept() => {
-                    debug!("Connection accepted");
+                    info!("Connection accepted");
                     let mut framed = SerdeFramed::new(
                         Framed::new(stream, LengthDelimitedCodec::new()),
                         Bincode::<Request, Response>::default(),
@@ -78,7 +78,7 @@ pub mod server {
                     let stop_tx = stop_tx.clone();
                     tokio::spawn(async move {
                         while let Some(Ok(request)) = framed.next().await {
-                            debug!("Received request: {:?}", request);
+                            info!("Received request: {:?}", request);
                             let resp = handle_request(&request, &daemon).await;
                             match resp {
                                 ControlFlow::Continue(r) => {
