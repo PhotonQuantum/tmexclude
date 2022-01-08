@@ -4,6 +4,8 @@ use std::path::PathBuf;
 
 use clap::{AppSettings, Args, Parser, Subcommand};
 
+use tmexclude_lib::rpc;
+
 #[derive(Debug, Parser)]
 #[clap(about, version, author, setting(AppSettings::PropagateVersion))]
 pub struct Arg {
@@ -50,6 +52,17 @@ impl ClientCommand {
             | ClientCommand::Reload(a)
             | ClientCommand::Restart(a)
             | ClientCommand::Shutdown(a) => a,
+        }
+    }
+}
+
+impl From<&ClientCommand> for rpc::Command {
+    fn from(cmd: &ClientCommand) -> Self {
+        match cmd {
+            ClientCommand::Pause(_) => Self::Pause,
+            ClientCommand::Reload(_) => Self::Reload,
+            ClientCommand::Restart(_) => Self::Restart,
+            ClientCommand::Shutdown(_) => Self::Shutdown,
         }
     }
 }

@@ -13,13 +13,12 @@ use figment::value::Dict;
 use figment::{Figment, Provider};
 
 use tmexclude_lib::daemon::Daemon;
-use tmexclude_lib::rpc;
 use tmexclude_lib::rpc::client::Client;
 use tmexclude_lib::rpc::server::start_server;
 use tmexclude_lib::rpc::Request;
 use tmexclude_lib::utils::TypeEq;
 
-use crate::args::{Arg, ClientCommand, Command, DaemonArgs};
+use crate::args::{Arg, Command, DaemonArgs};
 use crate::utils::{ensure_state_dir, AdhocProvider, FlexiProvider};
 
 mod args;
@@ -39,19 +38,8 @@ fn main() -> Result<()> {
         }
         Command::Scan(_) => unimplemented!(),
         Command::Client(cmd) => {
-            let req = match cmd {
-                ClientCommand::Pause(_) => Request {
-                    command: rpc::Command::Pause,
-                },
-                ClientCommand::Reload(_) => Request {
-                    command: rpc::Command::Reload,
-                },
-                ClientCommand::Restart(_) => Request {
-                    command: rpc::Command::Restart,
-                },
-                ClientCommand::Shutdown(_) => Request {
-                    command: rpc::Command::Shutdown,
-                },
+            let req = Request {
+                command: cmd.into(),
             };
             let args = cmd.args();
             talk(req, args.uds.as_ref().cloned())
