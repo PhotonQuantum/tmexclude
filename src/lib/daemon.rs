@@ -2,6 +2,7 @@
 use std::error::Error;
 
 use actix::{Actor, Addr, Context, Handler, Message};
+use actix_signal::AddrSignalExt;
 use figment::Provider;
 
 use crate::config::Config;
@@ -54,6 +55,10 @@ impl<F> Daemon<F> {
                 .collect(),
             interval: self.config.interval.watch,
         });
+
+        if let Some(old_handler) = &self.handler {
+            old_handler.stop();
+        }
         self.handler = Some(addr);
     }
 }
@@ -113,6 +118,9 @@ where
     type Result = ();
 
     fn handle(&mut self, _: Pause, _: &mut Self::Context) -> Self::Result {
+        if let Some(old_handler) = &self.handler {
+            old_handler.stop();
+        }
         self.handler = None;
     }
 }

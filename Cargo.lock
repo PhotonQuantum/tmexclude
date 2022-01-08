@@ -48,6 +48,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "actix-signal"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cf018569d8d5404ee0dcec2b6f055abeeecfbe7ef2d667623741b259ac272fa9"
+dependencies = [
+ "actix",
+ "actix-signal-derive",
+]
+
+[[package]]
+name = "actix-signal-derive"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f917e491a24f1ee23659a5b5bcc0831b0d95c274dbae7ce70fa0ef72e37552a7"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "actix_derive"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1407,6 +1428,7 @@ version = "0.1.0"
 dependencies = [
  "actix",
  "actix-rt",
+ "actix-signal",
  "bincode",
  "clap",
  "color-eyre",
