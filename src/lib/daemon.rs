@@ -69,6 +69,10 @@ where
     F: Unpin + 'static,
 {
     type Context = Context<Self>;
+
+    fn started(&mut self, _ctx: &mut Self::Context) {
+        self.start();
+    }
 }
 
 /// Reload config and restart daemon.

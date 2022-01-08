@@ -10,7 +10,7 @@ use actix::{Actor, Context, Handler, Message};
 use crossbeam_queue::SegQueue;
 use itertools::Itertools;
 use jwalk::WalkDirGeneric;
-use log::{debug, info, warn};
+use log::{debug, warn};
 use moka::sync::Cache;
 use tap::TapFallible;
 
@@ -184,7 +184,6 @@ pub fn walk_non_recursive(
 ) -> ExclusionActionBatch {
     if skip_cache.get::<CachedPath>(root.into()).is_some() {
         // Skip cache hit, early exit.
-        info!("hit skip cache");
         return ExclusionActionBatch::default();
     }
 
