@@ -8,8 +8,7 @@ use core_foundation::base::{TCFType, ToVoid};
 use core_foundation::number::{kCFBooleanFalse, kCFBooleanTrue};
 use core_foundation::url;
 use core_foundation::url::kCFURLIsExcludedFromBackupKey;
-use log::warn;
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use log::{info, warn};
 use tap::TapFallible;
 
 pub fn is_excluded(path: impl AsRef<Path>) -> std::io::Result<bool> {
@@ -32,11 +31,13 @@ impl ExclusionActionBatch {
         self.add.is_empty() && self.remove.is_empty()
     }
     pub fn apply(self, remove: bool) {
-        self.add.into_par_iter().for_each(|path| {
+        self.add.into_iter().for_each(|path| {
+            info!("Excluding {:?} from backups", path);
             ExclusionAction::Add(path).apply();
         });
         if remove {
-            self.remove.into_par_iter().for_each(|path| {
+            self.remove.into_iter().for_each(|path| {
+                info!("Including {:?} to backups", path);
                 ExclusionAction::Remove(path).apply();
             });
         }
