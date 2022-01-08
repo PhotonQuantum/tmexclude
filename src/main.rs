@@ -31,9 +31,10 @@ fn main() -> Result<()> {
     let args = Arg::parse();
 
     match &args.command {
-        Command::Daemon(DaemonArgs { uds }) => {
+        Command::Daemon(DaemonArgs { dry_run, uds }) => {
+            let dry_run = *dry_run;
             let uds = uds.clone();
-            let provider = move || collect_provider(args.config.clone(), &args);
+            let provider = move || collect_provider(args.config.clone(), dry_run);
             daemon(provider, uds)
         }
         Command::Scan(_) => unimplemented!(),
@@ -51,7 +52,7 @@ fn main() -> Result<()> {
     }
 }
 
-fn collect_provider(path: Option<PathBuf>, args: &Arg) -> io::Result<Figment> {
+fn collect_provider(path: Option<PathBuf>, dry_run: bool) -> io::Result<Figment> {
     let path = match path {
         None => UserDirs::new()
             .ok_or_else(|| io::Error::new(ErrorKind::NotFound, "Home directory not found"))?
@@ -68,7 +69,7 @@ fn collect_provider(path: Option<PathBuf>, args: &Arg) -> io::Result<Figment> {
 
     let adhoc = AdhocProvider({
         let mut dict = Dict::new();
-        if args.dry_run {
+        if dry_run {
             dict.insert("mode".into(), "dry-run".into());
         }
         dict
