@@ -95,13 +95,11 @@ where
     type Result = Result<(), ConfigError>;
 
     fn handle(&mut self, _: Reload, _: &mut Self::Context) -> Self::Result {
-        if self.running() {
-            let provider = (self.provider_factory)()
-                .cast()
-                .map_err(|e| ConfigError::Factory(e.into()))?;
-            self.config = Config::from(provider)?;
-            self.start();
-        }
+        let provider = (self.provider_factory)()
+            .cast()
+            .map_err(|e| ConfigError::Factory(e.into()))?;
+        self.config = Config::from(provider)?;
+        self.start();
         Ok(())
     }
 }
