@@ -1,3 +1,4 @@
+#![allow(clippy::future_not_send)]
 //! RPC facilities.
 use serde::{Deserialize, Serialize};
 
@@ -163,7 +164,7 @@ pub mod client {
     //! RPC client.
     use std::io;
     use std::io::ErrorKind;
-    use std::path::PathBuf;
+    use std::path::Path;
 
     use futures_util::{SinkExt, StreamExt};
     use tokio::net::UnixStream;
@@ -187,7 +188,7 @@ pub mod client {
         ///
         /// # Errors
         /// `io::Error` if fails to connect to given uds.
-        pub async fn connect(uds: PathBuf) -> io::Result<Self> {
+        pub async fn connect(uds: impl AsRef<Path>) -> io::Result<Self> {
             let raw = UnixStream::connect(uds).await?;
             Ok(Self {
                 stream: SerdeFramed::new(

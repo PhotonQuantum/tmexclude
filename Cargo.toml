@@ -15,16 +15,19 @@ path = "./src/lib/lib.rs"
 
 [dependencies]
 actix = "0.12"
-actix-signal = { version = "0.1", features = ["derive"] }
 actix-rt = "2.5"
+actix-signal = { version = "0.1", features = ["derive"] }
+bincode = "1.3"
 clap = { version = "3.0.5", features = ["derive"] }
 color-eyre = "0.5"
 core-foundation = { version = "0.9", features = ["mac_os_10_8_features"] }
 crossbeam-queue = "0.3"
+dialoguer = { version = "0.9", default-features = false }
 directories = "4.0"
 eyre = "0.6"
 figment = { version = "0.10", features = ["toml", "yaml"] }
 fsevent-stream = "0.2"
+futures-util = { version = "0.3", features = ["sink"] }
 humantime-serde = "1.0"
 itertools = "0.10"
 jwalk = "0.6"
@@ -37,12 +40,10 @@ serde_json = "1.0"
 shellexpand = "2.1"
 tap = "1.0"
 thiserror = "1.0"
-xattr = "0.2"
-bincode = "1.3"
+tokio = { version = "1.15", features = ["sync", "macros"] }
 tokio-serde = { version = "0.8", features = ["bincode"] }
 tokio-util = { version = "0.6", features = ["codec"] }
-futures-util = { version = "0.3", features = ["sink"] }
-tokio = { version = "1.15", features = ["sync", "macros"] }
+xattr = "0.2"
 
 [dev-dependencies]
 maplit = "1.0"

@@ -94,11 +94,7 @@ impl Handler<Walk> for Walker {
             return;
         }
         debug!("Apply batch {:?}", batch);
-        match msg.apply {
-            ApplyMode::DryRun => {}
-            ApplyMode::AddOnly => batch.apply(false),
-            ApplyMode::All => batch.apply(true),
-        }
+        batch.filter_by_mode(msg.apply).apply();
     }
 }
 

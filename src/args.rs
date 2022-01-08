@@ -83,6 +83,9 @@ pub struct ScanArgs {
     /// Don't touch the system. This flag overrides the config file.
     #[clap(short, long)]
     pub dry_run: bool,
+    /// Bypass any and all confirm messages.
+    #[clap(long)]
+    pub noconfirm: bool,
     /// Connect to the daemon through the given Unix domain socket.
     #[clap(short, long)]
     pub uds: Option<PathBuf>,

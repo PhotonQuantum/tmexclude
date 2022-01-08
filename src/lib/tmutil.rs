@@ -11,6 +11,12 @@ use core_foundation::url::kCFURLIsExcludedFromBackupKey;
 use log::{info, warn};
 use tap::TapFallible;
 
+use crate::config::ApplyMode;
+
+/// Check whether a path is excluded from time machine.
+///
+/// # Errors
+/// `io::Error` if can't query xattr of given file.
 pub fn is_excluded(path: impl AsRef<Path>) -> std::io::Result<bool> {
     let path = path.as_ref();
     Ok(
@@ -20,27 +26,43 @@ pub fn is_excluded(path: impl AsRef<Path>) -> std::io::Result<bool> {
     )
 }
 
+/// Represents a batch of tmutil modifications.
 #[derive(Debug, Clone, Default)]
 pub struct ExclusionActionBatch {
+    /// Paths to be added to backup exclusion list.
     pub add: Vec<PathBuf>,
+    /// Paths to be removed from backup exclusion list.
     pub remove: Vec<PathBuf>,
 }
 
 impl ExclusionActionBatch {
+    /// Return `true` if the batch contains no actions.
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.add.is_empty() && self.remove.is_empty()
     }
-    pub fn apply(self, remove: bool) {
+    /// Filter the batch by given `ApplyMode`.
+    #[must_use]
+    pub fn filter_by_mode(self, mode: ApplyMode) -> Self {
+        match mode {
+            ApplyMode::DryRun => Self::default(),
+            ApplyMode::AddOnly => Self {
+                add: self.add,
+                remove: vec![],
+            },
+            ApplyMode::All => self,
+        }
+    }
+    /// Apply the batch.
+    pub fn apply(self) {
         self.add.into_iter().for_each(|path| {
             info!("Excluding {:?} from backups", path);
             ExclusionAction::Add(path).apply();
         });
-        if remove {
-            self.remove.into_iter().for_each(|path| {
-                info!("Including {:?} to backups", path);
-                ExclusionAction::Remove(path).apply();
-            });
-        }
+        self.remove.into_iter().for_each(|path| {
+            info!("Including {:?} in backups", path);
+            ExclusionAction::Remove(path).apply();
+        });
     }
 }
 
@@ -75,13 +97,17 @@ impl AddAssign for ExclusionActionBatch {
     }
 }
 
+/// Represents a tmutil modification.
 #[derive(Debug, Clone)]
 pub enum ExclusionAction {
+    /// Add a path to backup exclusion list.
     Add(PathBuf),
+    /// Remove a path to backup exclusion list.
     Remove(PathBuf),
 }
 
 impl ExclusionAction {
+    /// Apply the action.
     pub fn apply(self) {
         let value = unsafe {
             if matches!(self, Self::Add(_)) {
