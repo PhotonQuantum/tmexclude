@@ -1,5 +1,6 @@
 //! Error types.
 use std::error::Error;
+use std::fmt::{Display, Formatter};
 
 use thiserror::Error;
 
@@ -25,14 +26,49 @@ pub enum ConfigError {
     #[error("{0}")]
     Factory(#[source] Box<dyn Error + Send + Sync>),
 }
+use serde::{Deserialize, Serialize};
 
-/// Error that may occur when persisting state to disk.
-#[derive(Debug, Error)]
-pub enum PersistentError {
-    /// Invalid json.
-    #[error("Invalid json: {0}")]
-    Json(#[from] serde_json::Error),
-    /// IO error.
-    #[error("IO error: {0}")]
-    IO(#[from] std::io::Error),
+/// Represents a end-user friendly serializable error.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SerializedError {
+    desc: String,
+    cause: Option<Box<SerializedError>>,
+}
+
+impl Display for SerializedError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.desc.as_str())
+    }
+}
+
+impl Error for SerializedError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        self.cause.as_ref().map(|e| &**e as &dyn Error)
+    }
+}
+
+impl<E> From<&E> for SerializedError
+where
+    E: Error + 'static,
+{
+    fn from(e: &E) -> Self {
+        eyre::Chain::new(e)
+            .rfold(None, |x, acc| {
+                x.map_or_else(
+                    || {
+                        Some(Self {
+                            desc: acc.to_string(),
+                            cause: None,
+                        })
+                    },
+                    |x| {
+                        Some(Self {
+                            desc: acc.to_string(),
+                            cause: Some(Box::new(x)),
+                        })
+                    },
+                )
+            })
+            .expect("must have one error")
+    }
 }
