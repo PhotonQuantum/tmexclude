@@ -49,4 +49,4 @@ xattr = "0.2"
 
 [dev-dependencies]
 maplit = "1.0"
-tempfile = "3.2"
+tempfile = "3.3"
