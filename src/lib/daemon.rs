@@ -1,15 +1,38 @@
 //! Facilities that setup components and maintain states on daemon mode.
-use std::error::Error;
 
 use actix::{Actor, Addr, Context, Handler, Message};
 use actix_signal::AddrSignalExt;
+use eyre::Report;
 use figment::Provider;
 
 use crate::config::Config;
-use crate::errors::ConfigError;
-use crate::utils::TypeEq;
 use crate::walker::{SkipCache, Walker};
 use crate::watcher::{RegisterWatcher, Watcher};
+
+/// Helper trait for fallible functions that returns a provider.
+pub trait ProviderFactory: 'static + Unpin {
+    /// Concrete provider type
+    type Provider: Provider;
+    /// Returns a provider.
+    ///
+    /// # Errors
+    /// Forwards eyre error.
+    fn call(&self) -> Result<Self::Provider, Report>;
+}
+
+impl<F, P, E> ProviderFactory for F
+where
+    F: Fn() -> Result<P, E>,
+    P: Provider,
+    E: Into<Report>,
+    Self: 'static + Unpin,
+{
+    type Provider = P;
+
+    fn call(&self) -> Result<Self::Provider, Report> {
+        (*self)().map_err(Into::into)
+    }
+}
 
 /// Daemon actor.
 pub struct Daemon<F> {
@@ -18,21 +41,16 @@ pub struct Daemon<F> {
     handler: Option<Addr<Watcher>>,
 }
 
-impl<F> Daemon<F> {
+impl<F> Daemon<F>
+where
+    F: ProviderFactory,
+{
     /// Construct a new daemon actor.
     ///
     /// # Errors
     /// Returns `ConfigError` if fails to load config with given factory.
-    pub fn new<P, O, E>(provider_factory: F) -> Result<Self, ConfigError>
-    where
-        F: Fn() -> O + Unpin + 'static,
-        O: TypeEq<Rhs = Result<P, E>>,
-        E: 'static + Error + Send + Sync,
-        P: Provider,
-    {
-        let provider = (provider_factory)()
-            .cast()
-            .map_err(|e| ConfigError::Factory(e.into()))?;
+    pub fn new(provider_factory: F) -> Result<Self, Report> {
+        let provider = provider_factory.call()?;
         let config = Config::from(provider)?;
         Ok(Self {
             provider_factory,
@@ -40,7 +58,9 @@ impl<F> Daemon<F> {
             handler: None,
         })
     }
+}
 
+impl<F> Daemon<F> {
     fn start(&mut self) {
         let walker = Walker::new(self.config.walk.clone(), SkipCache::default());
         let watcher = Watcher::new(self.config.mode, walker.start());
@@ -82,22 +102,17 @@ where
 
 /// Reload config and restart daemon.
 #[derive(Debug, Message)]
-#[rtype("Result<(), ConfigError>")]
+#[rtype("Result<(), Report>")]
 pub struct Reload;
 
-impl<F, O, E, P> Handler<Reload> for Daemon<F>
+impl<F> Handler<Reload> for Daemon<F>
 where
-    F: Fn() -> O + Unpin + 'static,
-    O: TypeEq<Rhs = Result<P, E>>,
-    E: 'static + Error + Send + Sync,
-    P: Provider,
+    F: ProviderFactory,
 {
-    type Result = Result<(), ConfigError>;
+    type Result = Result<(), Report>;
 
     fn handle(&mut self, _: Reload, _: &mut Self::Context) -> Self::Result {
-        let provider = (self.provider_factory)()
-            .cast()
-            .map_err(|e| ConfigError::Factory(e.into()))?;
+        let provider = self.provider_factory.call()?;
         self.config = Config::from(provider)?;
         self.start();
         Ok(())

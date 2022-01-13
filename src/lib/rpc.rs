@@ -1,17 +1,14 @@
 #![allow(clippy::future_not_send)]
 //! RPC facilities.
+
+use eyre::Report;
 use serde::{Deserialize, Serialize};
+
+use crate::errors::SerializedError;
 
 /// Represents an RPC request.
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Request {
-    /// RPC command.
-    pub command: Command,
-}
-
-/// An RPC command.
-#[derive(Debug, Serialize, Deserialize)]
-pub enum Command {
+pub enum Request {
     /// Pause daemon.
     Pause,
     /// Reload config and restart daemon.
@@ -24,16 +21,30 @@ pub enum Command {
 
 /// Represents an RPC response.
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Response {
-    /// If the call is success or not.
-    pub success: bool,
-    /// Supplemental messages.
-    pub msg: Option<String>,
+pub enum Response {
+    /// A empty success response.
+    Empty,
+    /// An error response containing a user-friendly error structure.
+    Error(SerializedError),
+}
+
+impl Response {
+    /// Check whether this response indicates a success.
+    #[must_use]
+    pub const fn success(&self) -> bool {
+        matches!(self, Response::Empty)
+    }
+}
+
+impl<E: Into<Report>> From<E> for Response {
+    fn from(e: E) -> Self {
+        Self::Error(SerializedError::from_error(e))
+    }
 }
 
 pub mod server {
     //! RPC server.
-    use std::error::Error;
+
     use std::io;
     use std::ops::ControlFlow;
     use std::path::PathBuf;
@@ -41,7 +52,6 @@ pub mod server {
     use actix::Addr;
     use actix_rt::net::UnixListener;
     use actix_rt::System;
-    use figment::Provider;
     use futures_util::{SinkExt, StreamExt};
     use log::{info, warn};
     use tokio::sync::mpsc::unbounded_channel;
@@ -49,20 +59,16 @@ pub mod server {
     use tokio_serde::Framed as SerdeFramed;
     use tokio_util::codec::{Framed, LengthDelimitedCodec};
 
-    use crate::daemon::{Daemon, Pause, Reload, Restart};
-    use crate::rpc::{Command, Request, Response};
-    use crate::utils::TypeEq;
+    use crate::daemon::{Daemon, Pause, ProviderFactory, Reload, Restart};
+    use crate::rpc::{Request, Response};
 
     /// Start the RPC server.
     ///
     /// # Errors
     /// `io::Error` if can't bind to given Unix domain socket.
-    pub async fn start_server<F, O, E, P>(uds: PathBuf, daemon: Addr<Daemon<F>>) -> io::Result<()>
+    pub async fn start_server<F>(uds: PathBuf, daemon: Addr<Daemon<F>>) -> io::Result<()>
     where
-        F: Fn() -> O + Unpin + 'static,
-        O: TypeEq<Rhs = Result<P, E>>,
-        E: 'static + Error + Send + Sync,
-        P: Provider,
+        F: ProviderFactory,
     {
         let listener = UnixListener::bind(uds)?;
         info!("Server started.");
@@ -104,57 +110,30 @@ pub mod server {
         Ok(())
     }
 
-    async fn handle_request<F, O, E, P>(
+    async fn handle_request<F>(
         request: &Request,
         daemon: &Addr<Daemon<F>>,
     ) -> ControlFlow<Response, Response>
     where
-        F: Fn() -> O + Unpin + 'static,
-        O: TypeEq<Rhs = Result<P, E>>,
-        E: 'static + Error + Send + Sync,
-        P: Provider,
+        F: ProviderFactory,
     {
-        ControlFlow::Continue(match request.command {
-            Command::Pause => match daemon.send(Pause).await {
-                Ok(_) => Response {
-                    success: true,
-                    msg: None,
-                },
-                Err(e) => Response {
-                    success: false,
-                    msg: Some(e.to_string()),
-                },
+        ControlFlow::Continue(match request {
+            Request::Pause => match daemon.send(Pause).await {
+                Ok(_) => Response::Empty,
+                Err(e) => e.into(),
             },
-            Command::Reload => match daemon.send(Reload).await {
-                Ok(Ok(_)) => Response {
-                    success: true,
-                    msg: None,
-                },
-                Ok(Err(e)) => Response {
-                    success: false,
-                    msg: Some(e.to_string()),
-                },
-                Err(e) => Response {
-                    success: false,
-                    msg: Some(e.to_string()),
-                },
+            Request::Reload => match daemon.send(Reload).await {
+                Ok(Ok(_)) => Response::Empty,
+                Ok(Err(e)) => e.into(),
+                Err(e) => e.into(),
             },
-            Command::Restart => match daemon.send(Restart).await {
-                Ok(_) => Response {
-                    success: true,
-                    msg: None,
-                },
-                Err(e) => Response {
-                    success: false,
-                    msg: Some(e.to_string()),
-                },
+            Request::Restart => match daemon.send(Restart).await {
+                Ok(_) => Response::Empty,
+                Err(e) => e.into(),
             },
-            Command::Shutdown => {
+            Request::Shutdown => {
                 System::current().stop();
-                return ControlFlow::Break(Response {
-                    success: true,
-                    msg: None,
-                });
+                return ControlFlow::Break(Response::Empty);
             }
         })
     }

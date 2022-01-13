@@ -5,7 +5,6 @@ use console::Emoji;
 use dialoguer::Confirm;
 
 use tmexclude_lib::config::{ApplyMode, Config};
-use tmexclude_lib::rpc;
 use tmexclude_lib::rpc::client::Client;
 use tmexclude_lib::rpc::Request;
 use tmexclude_lib::tmutil::ExclusionActionBatch;
@@ -96,13 +95,8 @@ impl DaemonGuard {
             return Self::NONE;
         };
 
-        match client
-            .send(Request {
-                command: rpc::Command::Pause,
-            })
-            .await
-        {
-            Ok(res) if res.success => Self {
+        match client.send(Request::Pause).await {
+            Ok(res) if res.success() => Self {
                 client: Some(client),
             },
             _ => {
@@ -114,13 +108,8 @@ impl DaemonGuard {
     pub async fn release(mut self) {
         if let Some(mut client) = self.client.take() {
             println!("Trying to restart daemon...");
-            match client
-                .send(Request {
-                    command: rpc::Command::Restart,
-                })
-                .await
-            {
-                Ok(res) if res.success => (),
+            match client.send(Request::Restart).await {
+                Ok(res) if res.success() => (),
                 _ => println!("WARN: failed to talk to daemon."),
             }
         }
