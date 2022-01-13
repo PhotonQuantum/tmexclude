@@ -15,7 +15,7 @@ path = "./src/lib/lib.rs"
 
 [dependencies]
 actix = "0.12"
-actix-rt = "2.5"
+actix-rt = "2.6"
 actix-signal = { version = "0.1", features = ["derive"] }
 bincode = "1.3"
 clap = { version = "3.0.6", features = ["derive"] }
