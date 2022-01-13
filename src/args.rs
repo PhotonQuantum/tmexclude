@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use clap::{AppSettings, Args, Parser, Subcommand};
 
-use tmexclude_lib::rpc;
+use tmexclude_lib::rpc::Request;
 
 #[derive(Debug, Parser)]
 #[clap(about, version, author, setting(AppSettings::PropagateVersion))]
@@ -50,7 +50,7 @@ impl ClientCommand {
     }
 }
 
-impl From<&ClientCommand> for rpc::Command {
+impl From<&ClientCommand> for Request {
     fn from(cmd: &ClientCommand) -> Self {
         match cmd {
             ClientCommand::Pause(_) => Self::Pause,

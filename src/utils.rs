@@ -38,21 +38,6 @@ impl Provider for FlexiProvider {
     }
 }
 
-#[derive(Debug, Clone, Default)]
-pub struct AdhocProvider(pub Dict);
-
-impl Provider for AdhocProvider {
-    fn metadata(&self) -> Metadata {
-        Metadata::named("Adhoc Provider")
-    }
-
-    fn data(&self) -> Result<Map<Profile, Dict>, Error> {
-        let mut map = Map::new();
-        map.insert(Profile::new("global"), self.0.clone());
-        Ok(map)
-    }
-}
-
 pub fn ensure_state_dir() -> Result<PathBuf> {
     let state_dir = ProjectDirs::from("me", "lightquantum", "tmexclude")
         .ok_or_else(|| eyre!("Home directory not found"))?

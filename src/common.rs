@@ -1,38 +1,38 @@
+use std::fs;
 use std::io::ErrorKind;
 use std::path::PathBuf;
-use std::{fs, io};
 
 use directories::UserDirs;
-use eyre::Result;
-use figment::value::Dict;
+use eyre::{eyre, ContextCompat, Result};
 use figment::Figment;
 
-use crate::{ensure_state_dir, AdhocProvider, FlexiProvider};
+use tmexclude_lib::errors::SuggestionExt;
 
-pub fn collect_provider(path: Option<PathBuf>, dry_run: bool) -> io::Result<Figment> {
+use crate::{ensure_state_dir, FlexiProvider};
+
+pub fn collect_provider(path: Option<PathBuf>, dry_run: bool) -> Result<Figment> {
+    let default_path = path.is_none();
     let path = match path {
         None => UserDirs::new()
-            .ok_or_else(|| io::Error::new(ErrorKind::NotFound, "Home directory not found"))?
+            .wrap_err("Home directory not found")?
             .home_dir()
             .join(".tmexclude.yaml"),
         Some(path) => path,
     };
     if !path.is_file() {
-        return Err(io::Error::new(
-            ErrorKind::NotFound,
-            format!("Config file not found: {:?}", path),
-        ));
+        return Err(eyre!("Config file not found: {:?}", path).with_suggestion(|| if default_path {
+            "please ensure the config file exists, or maybe you want to specify your config manually (--config)?"
+        } else {
+            "please ensure the config file exists on your given path"
+        }));
     }
 
-    let adhoc = AdhocProvider({
-        let mut dict = Dict::new();
-        if dry_run {
-            dict.insert("mode".into(), "dry-run".into());
-        }
-        dict
-    });
+    let mut figment = Figment::new().merge(FlexiProvider::from(path));
+    if dry_run {
+        figment = figment.merge(("mode", "dry_run"))
+    }
 
-    Ok(Figment::new().merge(FlexiProvider::from(path)).merge(adhoc))
+    Ok(figment)
 }
 
 pub fn ensure_uds_path(maybe_uds: Option<PathBuf>, cleanup: bool) -> Result<PathBuf> {
