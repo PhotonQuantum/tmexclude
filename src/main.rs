@@ -12,7 +12,7 @@ use crate::client::client;
 use crate::common::collect_provider;
 use crate::daemon::daemon;
 use crate::scan::scan;
-use crate::utils::{ensure_state_dir, AdhocProvider, FlexiProvider};
+use crate::utils::{ensure_state_dir, FlexiProvider};
 
 mod args;
 mod client;

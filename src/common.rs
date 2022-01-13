@@ -4,12 +4,11 @@ use std::path::PathBuf;
 
 use directories::UserDirs;
 use eyre::{eyre, ContextCompat, Result};
-use figment::value::Dict;
 use figment::Figment;
 
 use tmexclude_lib::errors::SuggestionExt;
 
-use crate::{ensure_state_dir, AdhocProvider, FlexiProvider};
+use crate::{ensure_state_dir, FlexiProvider};
 
 pub fn collect_provider(path: Option<PathBuf>, dry_run: bool) -> Result<Figment> {
     let default_path = path.is_none();
