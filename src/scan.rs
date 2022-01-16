@@ -81,6 +81,7 @@ impl DaemonGuard {
             return Self::NONE;
         }
 
+        #[allow(clippy::question_mark)] // false positive
         let uds = if let Ok(uds) = ensure_uds_path(uds, false) {
             uds
         } else {

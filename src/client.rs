@@ -30,7 +30,7 @@ pub fn client(req: Request, uds: Option<PathBuf>) -> Result<()> {
                 style(format!("{}Operation finished successfully.", PARTY_POPPER)).green()
             ),
             Response::Error(e) => {
-                return Err(e.into_report().wrap_err("Failed to execute remote command"))
+                return Err(e.into_report().wrap_err("Failed to execute remote command"));
             }
         }
         Ok(())

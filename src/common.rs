@@ -5,10 +5,27 @@ use std::path::PathBuf;
 use directories::UserDirs;
 use eyre::{eyre, ContextCompat, Result};
 use figment::Figment;
+use log::Level;
+use multi_log::MultiLogger;
+use oslog::OsLogger;
 
 use tmexclude_lib::errors::SuggestionExt;
 
 use crate::{ensure_state_dir, FlexiProvider};
+
+pub fn initialize_loggers() -> Result<()> {
+    let mut env_logger_builder = pretty_env_logger::formatted_builder();
+    if let Ok(filter) = std::env::var("RUST_LOG") {
+        env_logger_builder.parse_filters(&filter);
+    }
+    let env_logger = env_logger_builder.build();
+
+    let os_logger = OsLogger::new("me.lightquantum.tmexclude");
+    Ok(MultiLogger::init(
+        vec![Box::new(env_logger), Box::new(os_logger)],
+        Level::max(),
+    )?)
+}
 
 pub fn collect_provider(path: Option<PathBuf>, dry_run: bool) -> Result<Figment> {
     let default_path = path.is_none();
@@ -29,7 +46,7 @@ pub fn collect_provider(path: Option<PathBuf>, dry_run: bool) -> Result<Figment>
 
     let mut figment = Figment::new().merge(FlexiProvider::from(path));
     if dry_run {
-        figment = figment.merge(("mode", "dry_run"))
+        figment = figment.merge(("mode", "dry_run"));
     }
 
     Ok(figment)

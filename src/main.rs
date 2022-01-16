@@ -9,7 +9,7 @@ use tmexclude_lib::rpc::Request;
 
 use crate::args::{Arg, Command, DaemonArgs, ScanArgs};
 use crate::client::client;
-use crate::common::collect_provider;
+use crate::common::{collect_provider, initialize_loggers};
 use crate::daemon::daemon;
 use crate::scan::scan;
 use crate::utils::{ensure_state_dir, FlexiProvider};
@@ -32,7 +32,7 @@ fn main() {
 
 fn run() -> Result<()> {
     template_eyre::Hook::new(include_str!("error.hbs"))?.install()?;
-    pretty_env_logger::init();
+    initialize_loggers()?;
 
     let args = Arg::parse();
 
