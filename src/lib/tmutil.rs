@@ -41,6 +41,11 @@ impl ExclusionActionBatch {
     pub fn is_empty(&self) -> bool {
         self.add.is_empty() && self.remove.is_empty()
     }
+    /// Return the actions count in the batch.
+    #[must_use]
+    pub fn count(&self) -> usize {
+        self.add.len() + self.remove.len()
+    }
     /// Filter the batch by given `ApplyMode`.
     #[must_use]
     pub fn filter_by_mode(self, mode: ApplyMode) -> Self {

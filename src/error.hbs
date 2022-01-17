@@ -1,12 +1,11 @@
 {{style "red" error}}
 {{*set multi=(gt (len sources) 1)}}
 {{#each sources}}
-{{#if @first}}
-{{style "black.bright" "Caused by:"}}
-{{/if}}
-{{indent (_if @root.multi @index null) (style "yellow" this)}}
+    {{#if @first}}
+        {{~style "dim" "Caused by:"}}
+    {{/if}}
+    {{~indent (_if @root.multi @index null) (style "yellow" this)}}
 {{/each}}
 {{#if suggestion}}
-
-{{style "cyan" (concat "Suggestion: " suggestion)}}
+    {{style "cyan" (concat "\nSuggestion: " suggestion)}}
 {{/if}}

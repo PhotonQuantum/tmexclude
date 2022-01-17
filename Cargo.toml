@@ -42,12 +42,13 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 shellexpand = "2.1"
 tap = "1.0"
-template-eyre = "0.1.0-alpha.4"
+template-eyre = "0.1.0-alpha.5"
 thiserror = "1.0"
 tokio = { version = "1.15", features = ["sync", "macros"] }
 tokio-serde = { version = "0.8", features = ["bincode"] }
 tokio-util = { version = "0.6", features = ["codec"] }
 xattr = "0.2"
+humantime = "2.1"
 
 [dev-dependencies]
 maplit = "1.0"

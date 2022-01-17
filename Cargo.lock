@@ -222,9 +222,9 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "clap"
-version = "3.0.7"
+version = "3.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "12e8611f9ae4e068fa3e56931fded356ff745e70987ff76924a6e0ab1c8ef2e3"
+checksum = "31b34190c12bd1d613deba77e1cc13e68eaf4a0d51e389dbd485b7bfe15a47c0"
 dependencies = [
  "atty",
  "bitflags",
@@ -631,9 +631,9 @@ checksum = "9b919933a397b79c37e33b77bb2aa3dc8eb6e165ad809e58ff75bc7db2e34574"
 
 [[package]]
 name = "handlebars"
-version = "4.2.0"
+version = "4.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2483bce82dd3ed52509d0117e4a30a488bd608be250ed7a0185301314239ed31"
+checksum = "25546a65e5cf1f471f3438796fc634650b31d7fcde01d444c309aeb28b92e3a8"
 dependencies = [
  "log",
  "pest",
@@ -1447,9 +1447,9 @@ dependencies = [
 
 [[package]]
 name = "template-eyre"
-version = "0.1.0-alpha.4"
+version = "0.1.0-alpha.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "64bc073bac268b376c11ff40bc46e7ceb472be8c333d4a30bd204801e415cbd4"
+checksum = "4cd1f4bfe9b6e1e587e997d6786731f713138e5c49d25a00c3bbea34bd51e61b"
 dependencies = [
  "console",
  "eyre",
@@ -1522,6 +1522,7 @@ dependencies = [
  "figment",
  "fsevent-stream",
  "futures-util",
+ "humantime 2.1.0",
  "humantime-serde",
  "indicatif",
  "itertools",

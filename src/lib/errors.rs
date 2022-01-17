@@ -18,6 +18,9 @@ pub enum ConfigError {
     /// Missing rule.
     #[error("Missing rule: {0}")]
     Rule(String),
+    /// No directories in config.
+    #[error("No directory to scan")]
+    NoDirectory,
     /// Specified path is invalid.
     #[error("Specified path is invalid: {path}")]
     InvalidPath {

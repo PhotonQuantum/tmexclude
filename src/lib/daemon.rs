@@ -1,6 +1,7 @@
 //! Facilities that setup components and maintain states on daemon mode.
 
 use std::time::Duration;
+
 use actix::{Actor, Addr, Context, Handler, Message};
 use actix_signal::AddrSignalExt;
 use eyre::Report;

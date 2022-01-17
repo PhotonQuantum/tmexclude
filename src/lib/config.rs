@@ -7,7 +7,6 @@ use std::io::ErrorKind;
 use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 
-
 use figment::{Figment, Provider};
 use itertools::Itertools;
 use log::warn;
@@ -195,9 +194,11 @@ impl WalkConfig {
     }
 
     /// Get common root of all directories.
-    #[must_use]
-    pub fn root(&self) -> Option<PathBuf> {
-        get_root(&*self.directories)
+    ///
+    /// # Errors
+    /// `ConfigError` if there's no scanning directory specified in the config.
+    pub fn root(&self) -> Result<PathBuf, ConfigError> {
+        get_root(&*self.directories).ok_or(ConfigError::NoDirectory)
     }
 
     /// Squash nested directory paths.
@@ -236,14 +237,11 @@ mod test {
     use std::io::ErrorKind;
     use std::path::{Path, PathBuf};
     use std::str::FromStr;
-    
 
     use figment::providers::{Format, Yaml};
     use maplit::hashset;
 
-    use crate::config::{
-        get_paths, get_root, ApplyMode, Config, Directory, Rule, WalkConfig,
-    };
+    use crate::config::{get_paths, get_root, ApplyMode, Config, Directory, Rule, WalkConfig};
     use crate::errors::ConfigError;
 
     macro_rules! path {

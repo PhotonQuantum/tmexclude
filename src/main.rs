@@ -32,12 +32,13 @@ fn main() {
 
 fn run() -> Result<()> {
     template_eyre::Hook::new(include_str!("error.hbs"))?.install()?;
-    initialize_loggers()?;
 
     let args = Arg::parse();
 
     match &args.command {
         Command::Daemon(DaemonArgs { dry_run, uds }) => {
+            initialize_loggers()?;
+
             let dry_run = *dry_run;
             let uds = uds.clone();
             let config_path = args.config.as_ref().and_then(|p| p.canonicalize().ok());
@@ -51,8 +52,7 @@ fn run() -> Result<()> {
         }) => {
             let config_path = args.config.as_ref().and_then(|p| p.canonicalize().ok());
             let config = Config::from(collect_provider(config_path, *dry_run)?)?;
-            scan(config, uds.clone(), !*noconfirm);
-            Ok(())
+            scan(config, uds.clone(), !*noconfirm)
         }
         Command::Client(cmd) => {
             let req = Request::from(cmd);

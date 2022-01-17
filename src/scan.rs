@@ -1,10 +1,12 @@
 use std::path::PathBuf;
 
 use actix_rt::System;
-use console::Emoji;
+use console::{style, Emoji};
 use dialoguer::Confirm;
+use eyre::Result;
 
 use tmexclude_lib::config::{ApplyMode, Config};
+use tmexclude_lib::errors::SuggestionExt;
 use tmexclude_lib::rpc::client::Client;
 use tmexclude_lib::rpc::Request;
 use tmexclude_lib::tmutil::ExclusionActionBatch;
@@ -14,14 +16,22 @@ use crate::common::ensure_uds_path;
 use crate::spinner::Spinner;
 
 static LOOKING_GLASS: Emoji<'_, '_> = Emoji("🔍  ", "");
+static SPARKLE: Emoji<'_, '_> = Emoji("✨  ", ":-)");
+static HAMMER: Emoji<'_, '_> = Emoji("🔨  ", "");
 
-pub fn scan(config: Config, uds: Option<PathBuf>, interactive: bool) {
+pub fn scan(config: Config, uds: Option<PathBuf>, interactive: bool) -> Result<()> {
     let pending_actions = {
         let _spinner = Spinner::new(format!(
             "{}Scanning filesystem for files to exclude...",
             LOOKING_GLASS
         ));
-        walk_recursive(&config.walk.root().expect("No rule found"), config.walk)
+        walk_recursive(
+            &config
+                .walk
+                .root()
+                .suggestion("try to add some directories to your config")?,
+            config.walk,
+        )
     };
     let pending_actions = if config.mode == ApplyMode::DryRun {
         report_pending_actions(&pending_actions);
@@ -33,7 +43,7 @@ pub fn scan(config: Config, uds: Option<PathBuf>, interactive: bool) {
     };
 
     if pending_actions.is_empty() {
-        println!("No changes to apply.");
+        println!("\n{}Done. No changes to apply.", SPARKLE);
     } else {
         let proceed = !interactive
             || Confirm::new()
@@ -42,30 +52,40 @@ pub fn scan(config: Config, uds: Option<PathBuf>, interactive: bool) {
                 .interact()
                 .unwrap_or(false);
         if proceed {
-            println!("Applying changes...");
             System::new().block_on(async move {
+                let _spinner = Spinner::new(format!("{}Applying changes...", HAMMER));
                 let guard = DaemonGuard::new(uds, config.mode).await;
                 pending_actions.apply();
                 guard.release().await;
             });
-            println!("Completed.");
+            println!("\n{}Done.", SPARKLE);
         } else {
-            println!("Aborted.");
+            println!("\n{}", style("Aborted.").red());
         }
     }
+
+    Ok(())
 }
 
 fn report_pending_actions(actions: &ExclusionActionBatch) {
+    println!(
+        "{}",
+        style(format!(
+            "Scan complete. There are {} action(s) to be reviewed.",
+            actions.count()
+        ))
+        .green()
+    );
     if !actions.add.is_empty() {
         println!("Files to exclude from backup:");
         for path in &actions.add {
-            println!("{}", path.display());
+            println!("  {}", style(path.display()).dim());
         }
     }
     if !actions.remove.is_empty() {
         println!("Files to include in backup:");
         for path in &actions.remove {
-            println!("{}", path.display());
+            println!("  {}", style(path.display()).dim());
         }
     }
 }
@@ -75,44 +95,30 @@ struct DaemonGuard {
 }
 
 impl DaemonGuard {
-    const NONE: Self = Self { client: None };
-    pub async fn new(uds: Option<PathBuf>, mode: ApplyMode) -> Self {
+    async fn new_impl(uds: Option<PathBuf>, mode: ApplyMode) -> Option<Client> {
         if mode == ApplyMode::DryRun {
-            return Self::NONE;
+            return None;
         }
 
-        #[allow(clippy::question_mark)] // false positive
-        let uds = if let Ok(uds) = ensure_uds_path(uds, false) {
-            uds
-        } else {
-            return Self::NONE;
-        };
+        let uds = ensure_uds_path(uds, false).ok()?;
 
-        println!("Trying to pause daemon...");
-        let mut client = if let Ok(client) = Client::connect(&uds).await {
-            client
-        } else {
-            println!("No daemon found.");
-            return Self::NONE;
-        };
+        let mut client = Client::connect(&uds).await.ok()?;
 
-        match client.send(Request::Pause).await {
-            Ok(res) if res.success() => Self {
-                client: Some(client),
-            },
-            _ => {
-                println!("WARN: failed to talk to daemon.");
-                Self::NONE
-            }
+        client
+            .send(Request::Pause)
+            .await
+            .ok()
+            .filter(|r| r.body.success())
+            .map(|_| client)
+    }
+    pub async fn new(uds: Option<PathBuf>, mode: ApplyMode) -> Self {
+        Self {
+            client: Self::new_impl(uds, mode).await,
         }
     }
     pub async fn release(mut self) {
         if let Some(mut client) = self.client.take() {
-            println!("Trying to restart daemon...");
-            match client.send(Request::Restart).await {
-                Ok(res) if res.success() => (),
-                _ => println!("WARN: failed to talk to daemon."),
-            }
+            drop(client.send(Request::Restart).await);
         }
     }
 }

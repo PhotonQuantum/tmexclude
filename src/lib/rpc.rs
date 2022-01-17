@@ -1,6 +1,8 @@
 #![allow(clippy::future_not_send)]
 //! RPC facilities.
 
+use std::time::Duration;
+
 use eyre::Report;
 use serde::{Deserialize, Serialize};
 
@@ -21,22 +23,31 @@ pub enum Request {
 
 /// Represents an RPC response.
 #[derive(Debug, Serialize, Deserialize)]
-pub enum Response {
+pub struct Response {
+    /// Time elapsed processing this request.
+    pub elapsed: Duration,
+    /// The main response body.
+    pub body: Body,
+}
+
+/// Represents an RPC response payload.
+#[derive(Debug, Serialize, Deserialize)]
+pub enum Body {
     /// A empty success response.
     Empty,
     /// An error response containing a user-friendly error structure.
     Error(SerializedError),
 }
 
-impl Response {
+impl Body {
     /// Check whether this response indicates a success.
     #[must_use]
     pub const fn success(&self) -> bool {
-        matches!(self, Response::Empty)
+        matches!(self, Body::Empty)
     }
 }
 
-impl<E: Into<Report>> From<E> for Response {
+impl<E: Into<Report>> From<E> for Body {
     fn from(e: E) -> Self {
         Self::Error(SerializedError::from_error(e))
     }
@@ -48,6 +59,7 @@ pub mod server {
     use std::io;
     use std::ops::ControlFlow;
     use std::path::PathBuf;
+    use std::time::Instant;
 
     use actix::Addr;
     use actix_rt::net::UnixListener;
@@ -60,7 +72,7 @@ pub mod server {
     use tokio_util::codec::{Framed, LengthDelimitedCodec};
 
     use crate::daemon::{Daemon, Pause, ProviderFactory, Reload, Restart};
-    use crate::rpc::{Request, Response};
+    use crate::rpc::{Body, Request, Response};
 
     /// Start the RPC server.
     ///
@@ -86,15 +98,24 @@ pub mod server {
                     tokio::spawn(async move {
                         while let Some(Ok(request)) = framed.next().await {
                             info!("Received request: {:?}", request);
-                            let resp = handle_request(&request, &daemon).await;
-                            match resp {
-                                ControlFlow::Continue(r) => {
-                                    if let Err(e) = framed.send(r).await {
+                            let begin = Instant::now();
+                            let body = handle_request(&request, &daemon).await;
+                            match body {
+                                ControlFlow::Continue(body) => {
+                                    let resp = Response {
+                                        elapsed: begin.elapsed(),
+                                        body
+                                    };
+                                    if let Err(e) = framed.send(resp).await {
                                         warn!("Error when responding to rpc: {}", e);
                                     }
                                 }
-                                ControlFlow::Break(r) => {
-                                    if let Err(e) = framed.send(r).await {
+                                ControlFlow::Break(body) => {
+                                    let resp = Response {
+                                        elapsed: begin.elapsed(),
+                                        body
+                                    };
+                                    if let Err(e) = framed.send(resp).await {
                                         warn!("Error when responding to rpc: {}", e);
                                     }
                                     let _ = stop_tx.send(());
@@ -113,27 +134,27 @@ pub mod server {
     async fn handle_request<F>(
         request: &Request,
         daemon: &Addr<Daemon<F>>,
-    ) -> ControlFlow<Response, Response>
+    ) -> ControlFlow<Body, Body>
     where
         F: ProviderFactory,
     {
         ControlFlow::Continue(match request {
             Request::Pause => match daemon.send(Pause).await {
-                Ok(_) => Response::Empty,
+                Ok(_) => Body::Empty,
                 Err(e) => e.into(),
             },
             Request::Reload => match daemon.send(Reload).await {
-                Ok(Ok(_)) => Response::Empty,
+                Ok(Ok(_)) => Body::Empty,
                 Ok(Err(e)) => e.into(),
                 Err(e) => e.into(),
             },
             Request::Restart => match daemon.send(Restart).await {
-                Ok(_) => Response::Empty,
+                Ok(_) => Body::Empty,
                 Err(e) => e.into(),
             },
             Request::Shutdown => {
                 System::current().stop();
-                return ControlFlow::Break(Response::Empty);
+                return ControlFlow::Break(Body::Empty);
             }
         })
     }
