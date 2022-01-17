@@ -6,7 +6,7 @@ use std::fmt::Debug;
 use std::io::ErrorKind;
 use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
-use std::time::Duration;
+
 
 use figment::{Figment, Provider};
 use itertools::Itertools;
@@ -21,40 +21,8 @@ use crate::errors::ConfigError;
 pub struct Config {
     /// The apply mode this instance is working on.
     pub mode: ApplyMode,
-    /// Rescan and watch intervals.
-    pub interval: Interval,
     /// Configs related to walking, including interested directories and corresponding rules.
     pub walk: WalkConfig,
-}
-
-#[inline]
-const fn watcher_interval_default() -> Duration {
-    Duration::from_secs(30)
-}
-
-#[inline]
-const fn rescan_interval_default() -> Duration {
-    Duration::from_secs(86400)
-}
-
-/// Intervals that determine when to scan the filesystem.
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Deserialize)]
-pub struct Interval {
-    /// Batch delay for filesystem events.
-    #[serde(with = "humantime_serde", default = "watcher_interval_default")]
-    pub watch: Duration,
-    /// Interval between whole filesystem rescans.
-    #[serde(with = "humantime_serde", default = "rescan_interval_default")]
-    pub rescan: Duration,
-}
-
-impl Default for Interval {
-    fn default() -> Self {
-        Self {
-            watch: watcher_interval_default(),
-            rescan: rescan_interval_default(),
-        }
-    }
 }
 
 /// The apply mode for `TimeMachine` operations.
@@ -86,7 +54,6 @@ impl Config {
         let pre_config = PreConfig::from(provider)?;
         Ok(Self {
             mode: pre_config.mode,
-            interval: pre_config.interval,
             walk: WalkConfig::from(pre_config.directories, &pre_config.rules, pre_config.skips)?,
         })
     }
@@ -245,8 +212,6 @@ struct PreConfig {
     #[serde(default)]
     mode: ApplyMode,
     #[serde(default)]
-    interval: Interval,
-    #[serde(default)]
     directories: Vec<PreDirectory>,
     #[serde(default)]
     skips: Vec<String>,
@@ -271,13 +236,13 @@ mod test {
     use std::io::ErrorKind;
     use std::path::{Path, PathBuf};
     use std::str::FromStr;
-    use std::time::Duration;
+    
 
     use figment::providers::{Format, Yaml};
     use maplit::hashset;
 
     use crate::config::{
-        get_paths, get_root, ApplyMode, Config, Directory, Interval, Rule, WalkConfig,
+        get_paths, get_root, ApplyMode, Config, Directory, Rule, WalkConfig,
     };
     use crate::errors::ConfigError;
 
@@ -326,13 +291,6 @@ mod test {
         };
 
         assert_eq!(config.mode, ApplyMode::DryRun);
-        assert_eq!(
-            config.interval,
-            Interval {
-                watch: Duration::from_secs(60),
-                rescan: Duration::from_secs(43200),
-            }
-        );
         assert_eq!(
             config.walk,
             WalkConfig {

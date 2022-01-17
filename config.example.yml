@@ -1,6 +1,4 @@
 mode: add-only
-interval:
-  watch: 10s
 directories:
   - path: ~/
     rules:

@@ -1,5 +1,6 @@
 //! Facilities that setup components and maintain states on daemon mode.
 
+use std::time::Duration;
 use actix::{Actor, Addr, Context, Handler, Message};
 use actix_signal::AddrSignalExt;
 use eyre::Report;
@@ -8,6 +9,8 @@ use figment::Provider;
 use crate::config::Config;
 use crate::walker::{SkipCache, Walker};
 use crate::watcher::{RegisterWatcher, Watcher};
+
+const EVENT_DELAY: Duration = Duration::from_secs(30);
 
 /// Helper trait for fallible functions that returns a provider.
 pub trait ProviderFactory: 'static + Unpin {
@@ -73,7 +76,7 @@ impl<F> Daemon<F> {
                 .iter()
                 .map(|directory| directory.path.clone())
                 .collect(),
-            interval: self.config.interval.watch,
+            delay: EVENT_DELAY,
         });
 
         if let Some(old_handler) = &self.handler {

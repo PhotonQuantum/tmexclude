@@ -52,7 +52,7 @@ pub struct RegisterWatcher {
     /// Paths to be registered to the watcher
     pub paths: Vec<PathBuf>,
     /// Batch delay for filesystem events.
-    pub interval: Duration,
+    pub delay: Duration,
 }
 
 impl Handler<RegisterWatcher> for Watcher {
@@ -63,7 +63,7 @@ impl Handler<RegisterWatcher> for Watcher {
         let (stream, event_handle) = create_event_stream(
             msg.paths,
             kFSEventStreamEventIdSinceNow,
-            msg.interval,
+            msg.delay,
             kFSEventStreamCreateFlagIgnoreSelf,
         )?;
 
