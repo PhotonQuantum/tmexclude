@@ -100,7 +100,7 @@ impl DaemonGuard {
             return None;
         }
 
-        let uds = ensure_uds_path(uds, false).ok()?;
+        let uds = ensure_uds_path(uds).ok()?;
 
         let mut client = Client::connect(&uds).await.ok()?;
 

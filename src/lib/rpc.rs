@@ -58,7 +58,7 @@ pub mod server {
 
     use std::io;
     use std::ops::ControlFlow;
-    use std::path::PathBuf;
+    use std::path::Path;
     use std::time::Instant;
 
     use actix::Addr;
@@ -78,7 +78,7 @@ pub mod server {
     ///
     /// # Errors
     /// `io::Error` if can't bind to given Unix domain socket.
-    pub async fn start_server<F>(uds: PathBuf, daemon: Addr<Daemon<F>>) -> io::Result<()>
+    pub async fn start_server<F>(uds: impl AsRef<Path>, daemon: Addr<Daemon<F>>) -> io::Result<()>
     where
         F: ProviderFactory,
     {

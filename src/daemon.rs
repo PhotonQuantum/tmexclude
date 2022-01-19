@@ -2,12 +2,13 @@ use std::path::PathBuf;
 
 use actix::Actor;
 use actix_rt::System;
-use eyre::Result;
+use eyre::{Result, WrapErr};
 
 use tmexclude_lib::daemon::{Daemon, ProviderFactory};
+use tmexclude_lib::errors::SuggestionExt;
 use tmexclude_lib::rpc::server::start_server;
 
-use crate::common::ensure_uds_path;
+use crate::common::acquire_uds_guard;
 
 pub fn daemon<F>(provider: F, uds: Option<PathBuf>) -> Result<()>
 where
@@ -16,6 +17,9 @@ where
     System::new().block_on(async move {
         let daemon = Daemon::new(provider)?;
         let addr = daemon.start();
-        Ok(start_server(ensure_uds_path(uds, true)?, addr).await?)
+        let uds = acquire_uds_guard(uds)
+            .wrap_err("Unable to obtain exclusive lock to given socket")
+            .suggestion("check whether there's another instance running")?;
+        Ok(start_server(uds.path(), addr).await?)
     })
 }

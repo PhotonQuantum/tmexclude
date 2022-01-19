@@ -16,7 +16,7 @@ static SPARKLE: Emoji<'_, '_> = Emoji("✨  ", ":-)");
 
 pub fn client(req: Request, uds: Option<PathBuf>) -> Result<()> {
     async fn connect(uds: Option<PathBuf>) -> Result<Client> {
-        Ok(Client::connect(ensure_uds_path(uds, false)?).await?)
+        Ok(Client::connect(ensure_uds_path(uds)?).await?)
     }
     System::new().block_on(async move {
         let mut client = connect(uds)
