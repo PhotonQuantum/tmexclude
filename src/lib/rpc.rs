@@ -8,6 +8,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::errors::SerializedError;
 
+const PROTOCOL_VERSION: u8 = 1;
+
 /// Represents an RPC request.
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Request {
@@ -68,13 +70,14 @@ pub mod server {
     use log::{info, warn};
     use signal_hook::consts::TERM_SIGNALS;
     use signal_hook_tokio::Signals;
+    use tokio::io::AsyncWriteExt;
     use tokio::sync::mpsc::unbounded_channel;
     use tokio_serde::formats::Bincode;
     use tokio_serde::Framed as SerdeFramed;
     use tokio_util::codec::{Framed, LengthDelimitedCodec};
 
     use crate::daemon::{Daemon, Pause, ProviderFactory, Reload, Restart};
-    use crate::rpc::{Body, Request, Response};
+    use crate::rpc::{Body, Request, Response, PROTOCOL_VERSION};
 
     /// Start the RPC server.
     ///
@@ -90,8 +93,12 @@ pub mod server {
         let mut signals = Signals::new(TERM_SIGNALS)?;
         loop {
             tokio::select! {
-                Ok((stream, _)) = listener.accept() => {
+                Ok((mut stream, _)) = listener.accept() => {
                     info!("Connection accepted");
+                    if let Err(e) = stream.write_u8(PROTOCOL_VERSION).await {
+                        warn!("Error when sending protocol version to remove: {}", e);
+                        continue
+                    }
                     let mut framed = SerdeFramed::new(
                         Framed::new(stream, LengthDelimitedCodec::new()),
                         Bincode::<Request, Response>::default(),
@@ -171,13 +178,16 @@ pub mod client {
     use std::io::ErrorKind;
     use std::path::Path;
 
+    use eyre::{bail, Result};
     use futures_util::{SinkExt, StreamExt};
+    use tokio::io::AsyncReadExt;
     use tokio::net::UnixStream;
     use tokio_serde::formats::Bincode;
     use tokio_serde::Framed as SerdeFramed;
     use tokio_util::codec::{Framed, LengthDelimitedCodec};
 
-    use crate::rpc::{Request, Response};
+    use crate::errors::SuggestionExt;
+    use crate::rpc::{Request, Response, PROTOCOL_VERSION};
 
     type RawFrame = Framed<UnixStream, LengthDelimitedCodec>;
     type Codec = Bincode<Response, Request>;
@@ -193,8 +203,18 @@ pub mod client {
         ///
         /// # Errors
         /// `io::Error` if fails to connect to given uds.
-        pub async fn connect(uds: impl AsRef<Path>) -> io::Result<Self> {
-            let raw = UnixStream::connect(uds).await?;
+        pub async fn connect(uds: impl AsRef<Path>) -> Result<Self> {
+            let mut raw = UnixStream::connect(uds).await.suggestion(
+                "check if the daemon is running, or whether the given path to socket exists",
+            )?;
+            let version = raw.read_u8().await?;
+            if version != PROTOCOL_VERSION {
+                bail!(
+                    "Protocol mismatch. Expected version {}, got {}",
+                    PROTOCOL_VERSION,
+                    version
+                );
+            }
             Ok(Self {
                 stream: SerdeFramed::new(
                     Framed::new(raw, LengthDelimitedCodec::new()),
