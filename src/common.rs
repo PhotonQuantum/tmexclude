@@ -4,7 +4,7 @@ use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 
 use directories::UserDirs;
-use eyre::{eyre, ContextCompat, Result};
+use eyre::{eyre, Result, WrapErr};
 use figment::Figment;
 use fs2::FileExt;
 use log::Level;
@@ -33,7 +33,7 @@ pub fn collect_provider(path: Option<PathBuf>, dry_run: bool) -> Result<Figment>
     let default_path = path.is_none();
     let path = match path {
         None => UserDirs::new()
-            .wrap_err("Home directory not found")?
+            .ok_or_else(|| eyre!("Home directory not found"))?
             .home_dir()
             .join(".tmexclude.yaml"),
         Some(path) => path,
@@ -73,7 +73,10 @@ impl UdsGuard {
             .write(true)
             .create(true)
             .open(&lock_path)?;
-        lock_file.try_lock_exclusive()?;
+        lock_file
+            .try_lock_exclusive()
+            .wrap_err("Unable to obtain exclusive lock to given socket")
+            .suggestion("check whether there's another instance running")?;
         Ok(Self {
             uds_path,
             lock_path,
@@ -94,17 +97,22 @@ impl Drop for UdsGuard {
 }
 
 pub fn acquire_uds_guard(maybe_uds: Option<PathBuf>) -> Result<UdsGuard> {
-    let uds_path = match maybe_uds {
-        None => ensure_state_dir()?.join("daemon.sock"),
-        Some(path) => path,
-    };
+    let uds_path = ensure_uds_path(maybe_uds)?;
     let lock_path = uds_path.with_extension("lock");
     UdsGuard::new(uds_path, lock_path)
 }
 
 pub fn ensure_uds_path(maybe_uds: Option<PathBuf>) -> Result<PathBuf> {
-    Ok(match maybe_uds {
+    let path = match maybe_uds {
         None => ensure_state_dir()?.join("daemon.sock"),
         Some(path) => path,
-    })
+    };
+    if !path.parent().map_or(true, Path::exists) {
+        return Err(eyre!(
+            "Parent directory of socket path not found: {:?}",
+            path.parent().expect("has parent")
+        )
+        .suggestion("please ensure it exists"));
+    }
+    Ok(path)
 }

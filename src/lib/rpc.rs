@@ -66,6 +66,8 @@ pub mod server {
     use actix_rt::System;
     use futures_util::{SinkExt, StreamExt};
     use log::{info, warn};
+    use signal_hook::consts::TERM_SIGNALS;
+    use signal_hook_tokio::Signals;
     use tokio::sync::mpsc::unbounded_channel;
     use tokio_serde::formats::Bincode;
     use tokio_serde::Framed as SerdeFramed;
@@ -85,6 +87,7 @@ pub mod server {
         let listener = UnixListener::bind(uds)?;
         info!("Server started.");
         let (stop_tx, mut stop_rx) = unbounded_channel();
+        let mut signals = Signals::new(TERM_SIGNALS)?;
         loop {
             tokio::select! {
                 Ok((stream, _)) = listener.accept() => {
@@ -125,9 +128,11 @@ pub mod server {
                     });
                 },
                 _ = stop_rx.recv() => break,
+                _ = signals.next() => break,
                 else => ()
             }
         }
+        info!("Stopping server.");
         Ok(())
     }
 

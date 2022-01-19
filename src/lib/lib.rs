@@ -7,7 +7,6 @@ pub mod daemon;
 pub mod errors;
 pub mod rpc;
 pub mod tmutil;
-pub mod utils;
 pub mod walker;
 #[doc(hidden)]
 pub mod watcher;
