@@ -7,13 +7,14 @@ use eyre::Result;
 use tmexclude_lib::config::Config;
 use tmexclude_lib::rpc::Request;
 
-use crate::args::{Arg, Command, DaemonArgs, ScanArgs};
+use crate::args::{AgentCommand, Arg, Command, DaemonArgs, ScanArgs};
 use crate::client::client;
 use crate::common::{collect_provider, initialize_loggers};
 use crate::daemon::daemon;
 use crate::scan::scan;
 use crate::utils::{ensure_state_dir, FlexiProvider};
 
+mod agent;
 mod args;
 mod client;
 mod common;
@@ -36,7 +37,7 @@ fn run() -> Result<()> {
     let args = Arg::parse();
 
     match &args.command {
-        Command::Daemon(DaemonArgs { dry_run, uds }) => {
+        Command::Run(DaemonArgs { dry_run, uds }) => {
             initialize_loggers()?;
 
             let dry_run = *dry_run;
@@ -59,5 +60,15 @@ fn run() -> Result<()> {
             let args = cmd.args();
             client(req, (&args.uds).clone())
         }
+        Command::Agent(AgentCommand::Install(args)) => {
+            if args.uninstall {
+                agent::uninstall()
+            } else if args.no_save {
+                agent::display()
+            } else {
+                agent::install()
+            }
+        }
+        _ => todo!(),
     }
 }

@@ -19,12 +19,37 @@ pub struct Arg {
 #[derive(Debug, Subcommand)]
 #[clap(author)]
 pub enum Command {
-    /// Start the daemon to watch the filesystem continuously.
-    Daemon(DaemonArgs),
+    /// Setup or control the Launch Agent.
+    #[clap(subcommand)]
+    Agent(AgentCommand),
+    /// Run the daemon to watch the filesystem continuously.
+    Run(DaemonArgs),
     /// Perform a full scan and set the exclusion flag to your files.
     Scan(ScanArgs),
     #[clap(flatten)]
     Client(ClientCommand),
+}
+
+#[derive(Debug, Subcommand)]
+pub enum AgentCommand {
+    /// Install self as a per-user Launch Agent.
+    Install(InstallArgs),
+    /// Start the agent.
+    Start,
+    /// Stop the agent.
+    Stop,
+    /// Restart the agent.
+    Restart,
+}
+
+#[derive(Debug, Args)]
+pub struct InstallArgs {
+    /// Uninstall the agent.
+    #[clap(short, long)]
+    pub uninstall: bool,
+    /// Don't save the plist file. Print to stdout only.
+    #[clap(long)]
+    pub no_save: bool,
 }
 
 #[derive(Debug, Subcommand)]

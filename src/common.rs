@@ -1,5 +1,5 @@
 use std::fs;
-use std::fs::{File, OpenOptions};
+use std::fs::File;
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 
@@ -69,10 +69,7 @@ impl UdsGuard {
                 Err(e)
             }
         })?;
-        let lock_file = OpenOptions::new()
-            .write(true)
-            .create(true)
-            .open(&lock_path)?;
+        let lock_file = File::create(&lock_path)?;
         lock_file
             .try_lock_exclusive()
             .wrap_err("Unable to obtain exclusive lock to given socket")
