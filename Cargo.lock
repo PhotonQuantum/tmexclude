@@ -1479,9 +1479,9 @@ dependencies = [
 
 [[package]]
 name = "template-eyre"
-version = "0.1.0-alpha.5"
+version = "0.1.0-alpha.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4cd1f4bfe9b6e1e587e997d6786731f713138e5c49d25a00c3bbea34bd51e61b"
+checksum = "5db02429d5b356ac85a6553f2f70a197c2e7cc375bfb6d9426ed9a38414cd5de"
 dependencies = [
  "console",
  "eyre",

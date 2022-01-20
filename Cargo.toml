@@ -46,7 +46,7 @@ shellexpand = "2.1"
 signal-hook = "0.3"
 signal-hook-tokio = { version = "0.3", features = ["futures-v0_3"] }
 tap = "1.0"
-template-eyre = "0.1.0-alpha.5"
+template-eyre = "0.1.0-alpha.6"
 thiserror = "1.0"
 tokio = { version = "1.15", features = ["sync", "macros"] }
 tokio-serde = { version = "0.8", features = ["bincode"] }
