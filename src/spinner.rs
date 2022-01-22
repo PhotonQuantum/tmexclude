@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::sync::mpsc::{channel, Sender};
 use std::thread;
 use std::time::Duration;
@@ -10,7 +11,7 @@ pub struct Spinner {
 }
 
 impl Spinner {
-    pub fn new(msg: String) -> Self {
+    pub fn new(msg: impl Into<Cow<'static, str>> + Send + 'static) -> Self {
         let (tx, rx) = channel();
         let handle = thread::spawn(move || {
             let pb = ProgressBar::new_spinner();
