@@ -29,7 +29,18 @@ jobs:
           skip-unshallow: true
       - uses: softprops/action-gh-release@v1
         name: Upload release 🚀
+        id: release
         with:
           draft: true
           prerelease: ${{ contains(steps.tag.outputs.tag, '-') }}
-          files: release/*
+          files: |
+            *.rb
+            *.tar.gz
+      - name: Update tap
+        run: >-
+          curl -XPOST -u "PhotonQuantum:${{secrets.GH_TOKEN}}"
+          -H "Accept: application/vnd.github.v3+json" -H "Content-Type: application/json"
+          https://api.github.com/repos/PhotonQuantum/homebrew-tap/actions/workflows/update.yml/dispatches 
+          -d '{"formula": "tmexclude",
+          "file_url": "${{ fromJSON(steps.release.outputs.assets)[0].browser_download_url }}",
+          "version": "${{ steps.tag.outputs.tag }}}"'
