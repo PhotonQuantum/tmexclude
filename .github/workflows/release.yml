@@ -34,8 +34,8 @@ jobs:
           draft: true
           prerelease: ${{ contains(steps.tag.outputs.tag, '-') }}
           files: |
-            *.rb
-            *.tar.gz
+            release/*.rb
+            release/*.tar.gz
       - name: Update tap
         run: >
           curl -XPOST -u "PhotonQuantum:${{secrets.GH_TOKEN}}"
