@@ -1,12 +1,6 @@
-#![allow(clippy::module_name_repetitions)]
-
 use std::path::PathBuf;
 
 use clap::{AppSettings, Args, Parser, Subcommand};
-
-use tmexclude_lib::rpc::Request;
-
-use crate::agent::LABEL;
 
 #[derive(Debug, Parser)]
 #[clap(about, version, author, setting(AppSettings::PropagateVersion))]
@@ -41,12 +35,6 @@ pub enum AgentCommand {
     /// Stop (if necessary) and start the agent immediately and register
     /// it to launch at login.
     Restart,
-    /// Print the launch plist to stdout.
-    Plist {
-        /// Specify the label.
-        #[clap(short, long, default_value_t = LABEL.to_string())]
-        label: String,
-    },
 }
 
 #[derive(Debug, Subcommand)]
@@ -59,28 +47,6 @@ pub enum ClientCommand {
     Restart(ClientArgs),
     /// Shutdown daemon.
     Shutdown(ClientArgs),
-}
-
-impl ClientCommand {
-    pub const fn args(&self) -> &ClientArgs {
-        match self {
-            ClientCommand::Pause(a)
-            | ClientCommand::Reload(a)
-            | ClientCommand::Restart(a)
-            | ClientCommand::Shutdown(a) => a,
-        }
-    }
-}
-
-impl From<&ClientCommand> for Request {
-    fn from(cmd: &ClientCommand) -> Self {
-        match cmd {
-            ClientCommand::Pause(_) => Self::Pause,
-            ClientCommand::Reload(_) => Self::Reload,
-            ClientCommand::Restart(_) => Self::Restart,
-            ClientCommand::Shutdown(_) => Self::Shutdown,
-        }
-    }
 }
 
 #[derive(Debug, Args)]

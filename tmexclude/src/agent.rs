@@ -8,10 +8,10 @@ use std::{fs, process};
 use directories::UserDirs;
 use eyre::{bail, eyre, Result};
 
+use crate::consts::LABEL;
 use crate::spinner::Spinner;
 
-const LAUNCH_PLIST: &str = include_str!("../launch.plist");
-pub const LABEL: &str = "me.lightquantum.tmexclude";
+const LAUNCH_PLIST: &str = include_str!("../../launch.plist");
 
 fn brew(op: &str) -> Result<()> {
     let output = process::Command::new("brew")
@@ -63,7 +63,7 @@ fn convert_stderr<'a>(s: &'a [u8], default: &'a str) -> &'a str {
         .trim()
 }
 
-pub fn plist(label: &str) -> String {
+fn plist(label: &str) -> String {
     LAUNCH_PLIST
         .replace(
             "SELF_PATH",

@@ -12,7 +12,9 @@ use multi_log::MultiLogger;
 use oslog::OsLogger;
 
 use tmexclude_lib::errors::SuggestionExt;
+use tmexclude_lib::rpc::Request;
 
+use crate::args::{ClientArgs, ClientCommand};
 use crate::{ensure_state_dir, FlexiProvider};
 
 pub fn initialize_loggers() -> Result<()> {
@@ -112,4 +114,26 @@ pub fn ensure_uds_path(maybe_uds: Option<PathBuf>) -> Result<PathBuf> {
         .suggestion("please ensure it exists"));
     }
     Ok(path)
+}
+
+impl ClientCommand {
+    pub const fn args(&self) -> &ClientArgs {
+        match self {
+            ClientCommand::Pause(a)
+            | ClientCommand::Reload(a)
+            | ClientCommand::Restart(a)
+            | ClientCommand::Shutdown(a) => a,
+        }
+    }
+}
+
+impl From<&ClientCommand> for Request {
+    fn from(cmd: &ClientCommand) -> Self {
+        match cmd {
+            ClientCommand::Pause(_) => Self::Pause,
+            ClientCommand::Reload(_) => Self::Reload,
+            ClientCommand::Restart(_) => Self::Restart,
+            ClientCommand::Shutdown(_) => Self::Shutdown,
+        }
+    }
 }
