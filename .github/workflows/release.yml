@@ -1,0 +1,35 @@
+on:
+  push:
+    tags:
+      - "v*"
+name: Release
+jobs:
+  release:
+    name: Release
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+        name: Checkout 🛎️
+        with:
+          fetch-depth: 0
+      - uses: actions-rs/toolchain@v1
+        name: Setup Cargo Toolchain 🛎️
+        with:
+          target: aarch64-apple-darwin
+          toolchain: stable
+          profile: minimal
+          override: true
+      - uses: Swatinem/rust-cache@v1
+      - run: cargo xtask release
+        name: Build release 🚀
+      - uses: jimschubert/query-tag-action@v1
+        name: Find Tag 🔍
+        id: tag
+        with:
+          skip-unshallow: true
+      - uses: softprops/action-gh-release@v1
+        name: Upload release 🚀
+        with:
+          draft: true
+          prerelease: ${{ contains(steps.tag.outputs.tag, '-') }}
+          files: release/*
