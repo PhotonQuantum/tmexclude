@@ -6,6 +6,8 @@ use clap::{AppSettings, Args, Parser, Subcommand};
 
 use tmexclude_lib::rpc::Request;
 
+use crate::agent::LABEL;
+
 #[derive(Debug, Parser)]
 #[clap(about, version, author, setting(AppSettings::PropagateVersion))]
 pub struct Arg {
@@ -19,7 +21,7 @@ pub struct Arg {
 #[derive(Debug, Subcommand)]
 #[clap(author)]
 pub enum Command {
-    /// Setup or control the Launch Agent.
+    /// Manage Launch Agent.
     #[clap(subcommand)]
     Agent(AgentCommand),
     /// Run the daemon to watch the filesystem continuously.
@@ -32,24 +34,19 @@ pub enum Command {
 
 #[derive(Debug, Subcommand)]
 pub enum AgentCommand {
-    /// Install self as a per-user Launch Agent.
-    Install(InstallArgs),
-    /// Start the agent.
+    /// Start the agent immediately and register it to launch at login.
     Start,
-    /// Stop the agent.
+    /// Stop the agent immediately and unregister it from launching at login.
     Stop,
-    /// Restart the agent.
+    /// Stop (if necessary) and start the agent immediately and register
+    /// it to launch at login.
     Restart,
-}
-
-#[derive(Debug, Args)]
-pub struct InstallArgs {
-    /// Uninstall the agent.
-    #[clap(short, long)]
-    pub uninstall: bool,
-    /// Don't save the plist file. Print to stdout only.
-    #[clap(long)]
-    pub no_save: bool,
+    /// Print the launch plist to stdout.
+    Plist {
+        /// Specify the label.
+        #[clap(short, long, default_value_t = LABEL.to_string())]
+        label: String,
+    },
 }
 
 #[derive(Debug, Subcommand)]

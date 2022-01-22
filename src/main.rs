@@ -27,7 +27,8 @@ static EXCLAIMING: Emoji<'_, '_> = Emoji("❗️  ", "");
 
 fn main() {
     if let Err(e) = run() {
-        println!("{}{:?}", EXCLAIMING, e);
+        eprintln!("{}{:?}", EXCLAIMING, e);
+        std::process::exit(1);
     }
 }
 
@@ -60,15 +61,12 @@ fn run() -> Result<()> {
             let args = cmd.args();
             client(req, (&args.uds).clone())
         }
-        Command::Agent(AgentCommand::Install(args)) => {
-            if args.uninstall {
-                agent::uninstall()
-            } else if args.no_save {
-                agent::display()
-            } else {
-                agent::install()
-            }
+        Command::Agent(AgentCommand::Start) => agent::start(),
+        Command::Agent(AgentCommand::Stop) => agent::stop(),
+        Command::Agent(AgentCommand::Restart) => agent::restart(),
+        Command::Agent(AgentCommand::Plist { label }) => {
+            println!("{}", agent::plist(label.as_str()));
+            Ok(())
         }
-        _ => todo!(),
     }
 }

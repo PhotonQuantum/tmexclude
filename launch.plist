@@ -3,13 +3,13 @@
 <plist version="1.0">
     <dict>
         <key>Label</key>
-        <string>me.lightquantum.tmexclude</string>
+        <string>LABEL</string>
         <key>ProcessType</key>
         <string>Background</string>
         <key>ProgramArguments</key>
         <array>
             <string>SELF_PATH</string>
-            <string>daemon</string>
+            <string>run</string>
         </array>
         <key>KeepAlive</key>
         <dict>
