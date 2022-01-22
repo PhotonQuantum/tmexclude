@@ -1,4 +1,4 @@
-#![allow(clippy::non_ascii_literal)]
+#![allow(clippy::non_ascii_literal, clippy::module_name_repetitions)]
 
 use clap::Parser;
 use console::Emoji;
@@ -18,6 +18,7 @@ mod agent;
 mod args;
 mod client;
 mod common;
+mod consts;
 mod daemon;
 mod scan;
 mod spinner;
@@ -64,9 +65,5 @@ fn run() -> Result<()> {
         Command::Agent(AgentCommand::Start) => agent::start(),
         Command::Agent(AgentCommand::Stop) => agent::stop(),
         Command::Agent(AgentCommand::Restart) => agent::restart(),
-        Command::Agent(AgentCommand::Plist { label }) => {
-            println!("{}", agent::plist(label.as_str()));
-            Ok(())
-        }
     }
 }

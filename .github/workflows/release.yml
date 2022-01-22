@@ -1,0 +1,46 @@
+on:
+  push:
+    tags:
+      - "v*"
+name: Release
+jobs:
+  release:
+    name: Release
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+        name: Checkout 🛎️
+        with:
+          fetch-depth: 0
+      - uses: actions-rs/toolchain@v1
+        name: Setup Cargo Toolchain 🛎️
+        with:
+          target: aarch64-apple-darwin
+          toolchain: stable
+          profile: minimal
+          override: true
+      - uses: Swatinem/rust-cache@v1
+      - run: cargo xtask release
+        name: Build release 🚀
+      - uses: jimschubert/query-tag-action@v1
+        name: Find Tag 🔍
+        id: tag
+        with:
+          skip-unshallow: true
+      - uses: softprops/action-gh-release@master
+        name: Upload release 🚀
+        id: release
+        with:
+          prerelease: ${{ contains(steps.tag.outputs.tag, '-') }}
+          files: |
+            release/*.rb
+            release/*.tar.gz
+      - name: Update tap
+        run: >
+          curl -XPOST -u "PhotonQuantum:${{ secrets.GH_TOKEN }}"
+          -H "Accept: application/vnd.github.v3+json" -H "Content-Type: application/json"
+          https://api.github.com/repos/PhotonQuantum/homebrew-tap/actions/workflows/update.yml/dispatches 
+          -d '{"ref": "master", "inputs":
+          {"formula": "tmexclude",
+          "file_url": "${{ fromJSON(steps.release.outputs.assets)[0].browser_download_url }}",
+          "version": "${{ steps.tag.outputs.tag }}"}}'
