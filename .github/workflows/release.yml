@@ -37,7 +37,7 @@ jobs:
             *.rb
             *.tar.gz
       - name: Update tap
-        run: >-
+        run: >
           curl -XPOST -u "PhotonQuantum:${{secrets.GH_TOKEN}}"
           -H "Accept: application/vnd.github.v3+json" -H "Content-Type: application/json"
           https://api.github.com/repos/PhotonQuantum/homebrew-tap/actions/workflows/update.yml/dispatches 
