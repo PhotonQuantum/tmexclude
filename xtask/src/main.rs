@@ -2,7 +2,7 @@ use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 
 use clap::{Parser, Subcommand};
-use xshell::{cmd, cp, mkdir_p, rm_rf};
+use xshell::{cmd, cp, mkdir_p, rm_rf, write_file};
 
 const FORMULA_TEMPLATE: &str = include_str!("../../formula.rb");
 
@@ -103,7 +103,9 @@ fn release() {
     let tag = tag();
     let tar_file = format!("tmexclude-{tag}.tar.gz");
 
-    cmd!("tar czvf ./release/{tar_file} ./dist").run().unwrap();
+    cmd!("tar czvf ./release/{tar_file} --strip=1 ./dist")
+        .run()
+        .unwrap();
     let checksum = cmd!("shasum -a 256 ./release/{tar_file}")
         .read()
         .unwrap()
@@ -113,7 +115,7 @@ fn release() {
         .to_string();
 
     let formula = gen_formula(tag.as_str(), checksum.as_str());
-    std::fs::write("./release/tmexclude.rb", formula).unwrap();
+    write_file("./release/tmexclude.rb", formula).unwrap();
 }
 
 fn clean(target: bool) {
