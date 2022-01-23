@@ -103,7 +103,7 @@ fn release() {
     let tag = tag();
     let tar_file = format!("tmexclude-{tag}.tar.gz");
 
-    cmd!("tar czvf ./release/{tar_file} --strip=1 ./dist")
+    cmd!("tar czvf ./release/{tar_file} --strip=2 ./dist")
         .run()
         .unwrap();
     let checksum = cmd!("shasum -a 256 ./release/{tar_file}")
