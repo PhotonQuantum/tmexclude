@@ -18,28 +18,10 @@ use crate::errors::ConfigError;
 /// Main config type used throughout the application.
 #[derive(Debug, Clone)]
 pub struct Config {
-    /// The apply mode this instance is working on.
-    pub mode: ApplyMode,
+    /// Do not include files to backups if conditions are not met. Defaults to `false`.
+    pub no_include: bool,
     /// Configs related to walking, including interested directories and corresponding rules.
     pub walk: WalkConfig,
-}
-
-/// The apply mode for `TimeMachine` operations.
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum ApplyMode {
-    /// Don't touch the system.
-    DryRun,
-    /// Only add exclusions.
-    AddOnly,
-    /// Add and remove exclusions.
-    All,
-}
-
-impl Default for ApplyMode {
-    fn default() -> Self {
-        Self::AddOnly
-    }
 }
 
 impl Config {
@@ -52,7 +34,7 @@ impl Config {
     pub fn from(provider: impl Provider) -> Result<Self, ConfigError> {
         let pre_config = PreConfig::from(provider)?;
         Ok(Self {
-            mode: pre_config.mode,
+            no_include: pre_config.no_include,
             walk: WalkConfig::from(pre_config.directories, &pre_config.rules, pre_config.skips)?,
         })
     }
@@ -209,9 +191,10 @@ impl WalkConfig {
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "kebab-case")]
 struct PreConfig {
     #[serde(default)]
-    mode: ApplyMode,
+    no_include: bool,
     #[serde(default)]
     directories: Vec<PreDirectory>,
     #[serde(default)]
@@ -241,7 +224,7 @@ mod test {
     use figment::providers::{Format, Yaml};
     use maplit::hashset;
 
-    use crate::config::{get_paths, get_root, ApplyMode, Config, Directory, Rule, WalkConfig};
+    use crate::config::{get_paths, get_root, Config, Directory, Rule, WalkConfig};
     use crate::errors::ConfigError;
 
     macro_rules! path {
@@ -288,7 +271,7 @@ mod test {
             if_exists: vec![path!("a"), path!("b")],
         };
 
-        assert_eq!(config.mode, ApplyMode::DryRun);
+        assert!(config.no_include);
         assert_eq!(
             config.walk,
             WalkConfig {

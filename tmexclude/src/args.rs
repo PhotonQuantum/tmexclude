@@ -51,9 +51,6 @@ pub enum ClientCommand {
 
 #[derive(Debug, Args)]
 pub struct DaemonArgs {
-    /// Don't touch the system. This flag overrides the config file.
-    #[clap(short, long)]
-    pub dry_run: bool,
     /// Bind to this Unix domain socket.
     #[clap(short, long)]
     pub uds: Option<PathBuf>,
@@ -68,7 +65,7 @@ pub struct ClientArgs {
 
 #[derive(Debug, Args)]
 pub struct ScanArgs {
-    /// Don't touch the system. This flag overrides the config file.
+    /// Don't touch the system.
     #[clap(short, long)]
     pub dry_run: bool,
     /// Bypass any and all confirm messages.

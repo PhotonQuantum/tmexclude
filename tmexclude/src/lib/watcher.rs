@@ -8,13 +8,12 @@ use actix_signal::SignalHandler;
 use fsevent_stream::ffi::{kFSEventStreamCreateFlagIgnoreSelf, kFSEventStreamEventIdSinceNow};
 use fsevent_stream::stream::{create_event_stream, Event, EventStreamHandler};
 
-use crate::config::ApplyMode;
 use crate::walker::{Walk, Walker};
 
 /// Filesystem watcher actor.
 #[derive(SignalHandler)]
 pub struct Watcher {
-    apply_mode: ApplyMode,
+    no_include: bool,
     handler: Option<(SpawnHandle, EventStreamHandler)>,
     walker: Addr<Walker>,
 }
@@ -22,9 +21,9 @@ pub struct Watcher {
 impl Watcher {
     /// Create a new watcher actor instance.
     #[must_use]
-    pub const fn new(apply_mode: ApplyMode, walker: Addr<Walker>) -> Self {
+    pub const fn new(no_include: bool, walker: Addr<Walker>) -> Self {
         Self {
-            apply_mode,
+            no_include,
             handler: None,
             walker,
         }
@@ -85,7 +84,7 @@ impl StreamHandler<Event> for Watcher {
             self.walker.do_send(Walk {
                 root: item.path,
                 recursive: false,
-                apply: self.apply_mode,
+                no_include: self.no_include,
             });
         }
     }

@@ -11,8 +11,6 @@ use core_foundation::url::kCFURLIsExcludedFromBackupKey;
 use log::{info, warn};
 use tap::TapFallible;
 
-use crate::config::ApplyMode;
-
 /// Check whether a path is excluded from time machine.
 ///
 /// # Errors
@@ -45,18 +43,6 @@ impl ExclusionActionBatch {
     #[must_use]
     pub fn count(&self) -> usize {
         self.add.len() + self.remove.len()
-    }
-    /// Filter the batch by given `ApplyMode`.
-    #[must_use]
-    pub fn filter_by_mode(self, mode: ApplyMode) -> Self {
-        match mode {
-            ApplyMode::DryRun => Self::default(),
-            ApplyMode::AddOnly => Self {
-                add: self.add,
-                remove: vec![],
-            },
-            ApplyMode::All => self,
-        }
     }
     /// Apply the batch.
     pub fn apply(self) {

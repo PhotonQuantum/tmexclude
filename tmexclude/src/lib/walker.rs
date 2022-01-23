@@ -14,7 +14,7 @@ use log::{debug, warn};
 use moka::sync::Cache;
 use tap::TapFallible;
 
-use crate::config::{ApplyMode, Directory, Rule, WalkConfig};
+use crate::config::{Directory, Rule, WalkConfig};
 use crate::tmutil::{is_excluded, ExclusionAction, ExclusionActionBatch};
 
 const CACHE_MAX_CAPACITY: u64 = 512;
@@ -81,20 +81,23 @@ pub struct Walk {
     pub root: PathBuf,
     /// Whether this walk is recursive or not.
     pub recursive: bool,
-    /// [`ApplyMode`](ApplyMode) of this walk.
-    pub apply: ApplyMode,
+    /// Do not include files to backups.
+    pub no_include: bool,
 }
 
 impl Handler<Walk> for Walker {
     type Result = ();
 
     fn handle(&mut self, msg: Walk, _ctx: &mut Self::Context) -> Self::Result {
-        let batch = walk_non_recursive(&*msg.root, &self.config, &*self.skip_cache);
+        let mut batch = walk_non_recursive(&*msg.root, &self.config, &*self.skip_cache);
         if batch.is_empty() {
             return;
         }
         debug!("Apply batch {:?}", batch);
-        batch.filter_by_mode(msg.apply).apply();
+        if msg.no_include {
+            batch.remove.clear();
+        }
+        batch.apply();
     }
 }
 

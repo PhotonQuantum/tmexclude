@@ -1,4 +1,4 @@
-mode: add-only
+no-include: true
 directories:
   - path: ~/
     rules:

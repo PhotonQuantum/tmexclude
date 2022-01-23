@@ -1,4 +1,4 @@
-mode: dry-run
+no-include: true
 directories:
   - path: tests/mock_dirs/path_a
     rules: [ "rule_a", "rule_b" ]

@@ -39,13 +39,12 @@ fn run() -> Result<()> {
     let args = Arg::parse();
 
     match &args.command {
-        Command::Run(DaemonArgs { dry_run, uds }) => {
+        Command::Run(DaemonArgs { uds }) => {
             initialize_loggers()?;
 
-            let dry_run = *dry_run;
             let uds = uds.clone();
             let config_path = args.config.as_ref().and_then(|p| p.canonicalize().ok());
-            let provider = move || collect_provider(config_path.clone(), dry_run);
+            let provider = move || collect_provider(config_path.clone());
             daemon(provider, uds)
         }
         Command::Scan(ScanArgs {
@@ -54,8 +53,8 @@ fn run() -> Result<()> {
             uds,
         }) => {
             let config_path = args.config.as_ref().and_then(|p| p.canonicalize().ok());
-            let config = Config::from(collect_provider(config_path, *dry_run)?)?;
-            scan(config, uds.clone(), !*noconfirm)
+            let config = Config::from(collect_provider(config_path)?)?;
+            scan(config, uds.clone(), !*noconfirm, *dry_run)
         }
         Command::Client(cmd) => {
             let req = Request::from(cmd);

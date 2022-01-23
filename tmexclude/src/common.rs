@@ -31,7 +31,7 @@ pub fn initialize_loggers() -> Result<()> {
     )?)
 }
 
-pub fn collect_provider(path: Option<PathBuf>, dry_run: bool) -> Result<Figment> {
+pub fn collect_provider(path: Option<PathBuf>) -> Result<Figment> {
     let default_path = path.is_none();
     let path = match path {
         None => UserDirs::new()
@@ -48,12 +48,7 @@ pub fn collect_provider(path: Option<PathBuf>, dry_run: bool) -> Result<Figment>
         }));
     }
 
-    let mut figment = Figment::new().merge(FlexiProvider::from(path));
-    if dry_run {
-        figment = figment.merge(("mode", "dry_run"));
-    }
-
-    Ok(figment)
+    Ok(Figment::new().merge(FlexiProvider::from(path)))
 }
 
 pub struct UdsGuard {

@@ -5,7 +5,7 @@ use console::{style, Emoji};
 use dialoguer::Confirm;
 use eyre::Result;
 
-use tmexclude_lib::config::{ApplyMode, Config};
+use tmexclude_lib::config::Config;
 use tmexclude_lib::errors::SuggestionExt;
 use tmexclude_lib::rpc::client::Client;
 use tmexclude_lib::rpc::Request;
@@ -19,8 +19,8 @@ static LOOKING_GLASS: Emoji<'_, '_> = Emoji("🔍  ", "");
 static SPARKLE: Emoji<'_, '_> = Emoji("✨  ", ":-)");
 static HAMMER: Emoji<'_, '_> = Emoji("🔨  ", "");
 
-pub fn scan(config: Config, uds: Option<PathBuf>, interactive: bool) -> Result<()> {
-    let pending_actions = {
+pub fn scan(config: Config, uds: Option<PathBuf>, interactive: bool, dry_run: bool) -> Result<()> {
+    let mut pending_actions = {
         let _spinner = Spinner::new(format!(
             "{}Scanning filesystem for files to exclude...",
             LOOKING_GLASS
@@ -33,16 +33,12 @@ pub fn scan(config: Config, uds: Option<PathBuf>, interactive: bool) -> Result<(
             config.walk,
         )
     };
-    let pending_actions = if config.mode == ApplyMode::DryRun {
-        report_pending_actions(&pending_actions);
-        pending_actions.filter_by_mode(config.mode)
-    } else {
-        let filtered_actions = pending_actions.filter_by_mode(config.mode);
-        report_pending_actions(&filtered_actions);
-        filtered_actions
-    };
+    report_pending_actions(&pending_actions, config.no_include);
+    if config.no_include {
+        pending_actions.remove.clear();
+    }
 
-    if pending_actions.is_empty() {
+    if dry_run || pending_actions.is_empty() {
         println!("\n{}Done. No changes to apply.", SPARKLE);
     } else {
         let proceed = !interactive
@@ -54,7 +50,7 @@ pub fn scan(config: Config, uds: Option<PathBuf>, interactive: bool) -> Result<(
         if proceed {
             System::new().block_on(async move {
                 let _spinner = Spinner::new(format!("{}Applying changes...", HAMMER));
-                let guard = DaemonGuard::new(uds, config.mode).await;
+                let guard = DaemonGuard::new(uds).await;
                 pending_actions.apply();
                 guard.release().await;
             });
@@ -67,7 +63,7 @@ pub fn scan(config: Config, uds: Option<PathBuf>, interactive: bool) -> Result<(
     Ok(())
 }
 
-fn report_pending_actions(actions: &ExclusionActionBatch) {
+fn report_pending_actions(actions: &ExclusionActionBatch, no_include: bool) {
     println!(
         "{}",
         style(format!(
@@ -84,8 +80,21 @@ fn report_pending_actions(actions: &ExclusionActionBatch) {
     }
     if !actions.remove.is_empty() {
         println!("Files to include in backup:");
-        for path in &actions.remove {
-            println!("  {}", style(path.display()).dim());
+        if no_include {
+            let plural = if actions.remove.len() == 1 { "" } else { "s" };
+            println!(
+                "    {}",
+                style(format!(
+                    "- {} file{} ignored -",
+                    actions.remove.len(),
+                    plural
+                ))
+                .dim()
+            );
+        } else {
+            for path in &actions.remove {
+                println!("  {}", style(path.display()).dim());
+            }
         }
     }
 }
@@ -95,11 +104,7 @@ struct DaemonGuard {
 }
 
 impl DaemonGuard {
-    async fn new_impl(uds: Option<PathBuf>, mode: ApplyMode) -> Option<Client> {
-        if mode == ApplyMode::DryRun {
-            return None;
-        }
-
+    async fn new_impl(uds: Option<PathBuf>) -> Option<Client> {
         let uds = ensure_uds_path(uds).ok()?;
 
         let mut client = Client::connect(&uds).await.ok()?;
@@ -111,9 +116,9 @@ impl DaemonGuard {
             .filter(|r| r.body.success())
             .map(|_| client)
     }
-    pub async fn new(uds: Option<PathBuf>, mode: ApplyMode) -> Self {
+    pub async fn new(uds: Option<PathBuf>) -> Self {
         Self {
-            client: Self::new_impl(uds, mode).await,
+            client: Self::new_impl(uds).await,
         }
     }
     pub async fn release(mut self) {

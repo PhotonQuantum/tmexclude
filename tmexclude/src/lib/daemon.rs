@@ -67,7 +67,7 @@ where
 impl<F> Daemon<F> {
     fn start(&mut self) {
         let walker = Walker::new(self.config.walk.clone(), SkipCache::default());
-        let watcher = Watcher::new(self.config.mode, walker.start());
+        let watcher = Watcher::new(self.config.no_include, walker.start());
         let addr = watcher.start();
         addr.do_send(RegisterWatcher {
             paths: self
