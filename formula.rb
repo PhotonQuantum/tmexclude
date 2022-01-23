@@ -8,12 +8,10 @@ class Tmexclude < Formula
   def install
     bin.install "tmexclude"
     bash_completion.install "completion/tmexclude.bash"
-    zsh_completion.install "completion/tmexclude.fish"
-    fish_completion.install "completion/_tmexclude"
-    inreplace "launch.plist" do |s|
-      s.gsub! "LABEL", "#{plist_name}"
-      s.gsub! "SELF_PATH", "#{bin}/tmexclude"
-    end
+    zsh_completion.install "completion/_tmexclude"
+    fish_completion.install "completion/tmexclude.fish"
+    inreplace "launch.plist", "LABEL", plist.to_s
+    inreplace "launch.plist", "SELF_PATH", "#{bin}/tmexclude"
     prefix.install_symlink "launch.plist" => "#{plist_name}.plist"
   end
 
