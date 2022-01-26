@@ -2,6 +2,8 @@
 #![allow(clippy::module_name_repetitions)]
 #![warn(missing_docs)]
 
+extern crate core;
+
 pub mod config;
 pub mod daemon;
 pub mod errors;

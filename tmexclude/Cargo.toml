@@ -36,6 +36,7 @@ itertools = "0.10"
 jwalk = "0.6"
 libc = "0.2"
 log = "0.4"
+maplit = "1.0"
 moka = "0.7"
 multi_log = "0.1"
 oslog = "0.1"
@@ -55,5 +56,4 @@ tokio-util = { version = "0.6", features = ["codec"] }
 xattr = "0.2"
 
 [dev-dependencies]
-maplit = "1.0"
 tempfile = "3.3"

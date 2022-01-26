@@ -1,0 +1,16 @@
+directories:
+  - path: tests/mock_dirs/path_a
+    rules: [ "main" ]
+  - path: tests/mock_dirs/path_b
+    rules: [ "b", "e" ]
+rules:
+  main: [ "a", "b", "c" ]
+  a:
+    excludes: [ "a" ]
+  b: [ "a", "c", "d" ]
+  c:
+    excludes: [ "c" ]
+  d:
+    excludes: [ "d" ]
+  e:
+    excludes: [ "e" ]

@@ -32,6 +32,9 @@ pub enum ConfigError {
     /// Error occur in factory.
     #[error("{0}")]
     Factory(Report),
+    /// Missing rule.
+    #[error("Loop found in rules. Rendezvous point: {0}")]
+    Loop(String),
 }
 
 /// Represents a end-user friendly serializable error.

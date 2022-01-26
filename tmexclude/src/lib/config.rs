@@ -10,6 +10,7 @@ use std::path::{Path, PathBuf};
 use figment::{Figment, Provider};
 use itertools::Itertools;
 use log::warn;
+use maplit::hashset;
 use serde::Deserialize;
 use tap::TapFallible;
 
@@ -115,12 +116,49 @@ fn get_root(directories: &[Directory]) -> Option<PathBuf> {
         })
 }
 
+fn dfs_union_rules<'a, 'b>(
+    cache: &mut HashMap<String, HashSet<Rule>>,
+    rules: &'a HashMap<String, PreRule>,
+    node: &'b str,
+    mut visited: HashSet<&'b str>,
+) -> Result<HashSet<Rule>, ConfigError> {
+    if let Some(hit) = cache.get(node) {
+        return Ok(hit.clone());
+    }
+    if visited.contains(node) {
+        return Err(ConfigError::Loop(node.to_string()));
+    }
+
+    let resolved = rules
+        .get(node)
+        .ok_or_else(|| ConfigError::Rule(node.to_string()))?;
+    match resolved {
+        PreRule::Concrete(rule) => Ok(hashset![rule.clone()]),
+        PreRule::Union(referenced) => {
+            visited.insert(node);
+            referenced
+                .iter()
+                .map(|node| dfs_union_rules(cache, rules, node, visited.clone()))
+                .try_fold(hashset![/* can have rules later */], |mut acc, x| {
+                    x.map(|x| {
+                        acc.extend(x);
+                        acc
+                    })
+                })
+        }
+    }
+    .tap_ok(|result| {
+        cache.insert(node.to_string(), result.clone()); // avoid to_string?
+    })
+}
+
 impl WalkConfig {
     fn from(
         directories: Vec<PreDirectory>,
-        rules: &HashMap<String, Rule>,
+        rules: &HashMap<String, PreRule>,
         skips: Vec<String>,
     ) -> Result<Self, ConfigError> {
+        let mut cache = HashMap::new();
         Ok(Self {
             directories: directories
                 .into_iter()
@@ -130,13 +168,15 @@ impl WalkConfig {
                         .rules
                         .into_iter()
                         .map(|rule_name| {
-                            // try get rule by name
-                            rules
-                                .get(rule_name.as_str())
-                                .cloned()
-                                .ok_or(ConfigError::Rule(rule_name))
+                            // try to get rule by dfs
+                            dfs_union_rules(&mut cache, rules, rule_name.as_str(), hashset![])
                         })
-                        .try_collect()
+                        .try_fold(vec![], |mut acc, x| {
+                            x.map(|x| {
+                                acc.extend(x.into_iter());
+                                acc
+                            })
+                        })
                         .and_then(|rules| {
                             PathBuf::from(shellexpand::tilde(&pre_directory.path).as_ref())
                                 .canonicalize()
@@ -200,13 +240,20 @@ struct PreConfig {
     #[serde(default)]
     skips: Vec<String>,
     #[serde(default)]
-    rules: HashMap<String, Rule>,
+    rules: HashMap<String, PreRule>,
 }
 
 #[derive(Deserialize)]
 struct PreDirectory {
     path: String,
     rules: Vec<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum PreRule {
+    Concrete(Rule),
+    Union(Vec<String>),
 }
 
 impl PreConfig {
@@ -217,11 +264,13 @@ impl PreConfig {
 
 #[cfg(test)]
 mod test {
+    use std::collections::HashSet;
     use std::io::ErrorKind;
     use std::path::{Path, PathBuf};
     use std::str::FromStr;
 
     use figment::providers::{Format, Yaml};
+    use itertools::Itertools;
     use maplit::hashset;
 
     use crate::config::{get_paths, get_root, Config, Directory, Rule, WalkConfig};
@@ -288,6 +337,43 @@ mod test {
                 skips: hashset![cwd_path!("tests/mock_dirs/path_b")],
             }
         );
+    }
+
+    #[test]
+    fn must_test_inherit_rule() {
+        static INHERIT_RULE: &str = include_str!("../../tests/configs/inherit_rule.yaml");
+        let config = Config::from(Yaml::string(INHERIT_RULE)).expect("must parse config");
+
+        let directories_rules = config
+            .walk
+            .directories
+            .into_iter()
+            .map(|directory| {
+                directory
+                    .rules
+                    .into_iter()
+                    .map(|rule| rule.excludes[0].clone())
+                    .collect::<HashSet<_>>()
+            })
+            .collect_vec();
+        assert_eq!(
+            directories_rules,
+            [
+                hashset![path!("a"), path!("c"), path!("d")],
+                hashset![path!("a"), path!("c"), path!("d"), path!("e")]
+            ]
+        );
+    }
+
+    #[test]
+    fn must_fail_inherit_rule_loop() {
+        static INHERIT_RULE_LOOP: &str = include_str!("../../tests/configs/inherit_rule_loop.yaml");
+        let provider = Yaml::string(INHERIT_RULE_LOOP);
+        let error = Config::from(provider).expect_err("must fail");
+        match error {
+            ConfigError::Loop(path) => assert_eq!(path, "a"),
+            _ => panic!("Error type mismatch"),
+        }
     }
 
     #[test]
