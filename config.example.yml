@@ -1,11 +1,7 @@
 no-include: true
 directories:
   - path: ~/
-    rules:
-      - rust
-      - nodejs
-      - python
-      - pnpm
+    rules: [ Development ]
 skips:
   - ~/Library
   - ~/Pictures
@@ -14,26 +10,95 @@ skips:
   - ~/Dropbox
   - ~/.dropbox
   - ~/.Trash
+  - ~/.pnpm-store
 rules:
-  rust:
-    excludes:
-      - target
-    if-exists:
-      - Cargo.toml
-  nodejs:
-    excludes:
-      - node_modules
-    if-exists:
-      - package.json
-  pnpm:
-    excludes:
-      - .pnpm-store
-  python:
-    excludes:
-      - build
-      - dist
-      - venv
-      - .venv
-    if-exists:
-      - requirements.txt
-      - setup.py
+  # adopted from [asimov](https://github.com/stevegrunwell/asimov)
+  Development:
+    - Swift
+    - Gradle
+    - Gradle Kotlin Script
+    - Flutter (Dart)
+    - Pub (Dart)
+    - Stack (Haskell)
+    - Tox (Python)
+    - Vagrant
+    - virtualenv (Python)
+    - Carthage
+    - CocoaPods
+    - Bower (JavaScript)
+    - Python
+    - PyPI Publishing (Python)
+    - "npm, Yarn (NodeJS)"
+    - Cargo (Rust)
+    - Maven
+    - Composer (PHP)
+    - Bundler (Ruby)
+    - Go Modules (Golang)
+    - Mix dependencies (Elixir)
+    - Mix build files (Elixir)
+  Swift:
+    excludes: [ ".build" ]
+    if-exists: [ Package.swift ]
+  Gradle:
+    excludes: [ build ]
+    if-exists: [ build.gradle ]
+  Gradle Kotlin Script:
+    excludes: [ build ]
+    if-exists: [ build.gradle.kts ]
+  Flutter (Dart):
+    excludes: [ build ]
+    if-exists: [ pubspec.yaml ]
+  Pub (Dart):
+    excludes: [ ".packages" ]
+    if-exists: [ pubspec.yaml ]
+  Stack (Haskell):
+    excludes: [ ".stack-work" ]
+    if-exists: [ stack.yaml ]
+  Tox (Python):
+    excludes: [ ".tox" ]
+    if-exists: [ tox.ini ]
+  Vagrant:
+    excludes: [ ".vagrant" ]
+    if-exists: [ Vagrantfile ]
+  virtualenv (Python):
+    excludes: [ venv ]
+    if-exists: [ requirements.txt ]
+  Carthage:
+    excludes: [ Carthage ]
+    if-exists: [ Cartfile ]
+  CocoaPods:
+    excludes: [ Pods ]
+    if-exists: [ Podfile ]
+  Bower (JavaScript):
+    excludes: [ bower_components ]
+    if-exists: [ bower.json ]
+  Python:
+    excludes: [ build ]
+    if-exists: [ setup.py ]
+  PyPI Publishing (Python):
+    excludes: [ dist ]
+    if-exists: [ setup.py ]
+  "npm, Yarn (NodeJS)":
+    excludes: [ node_modules ]
+    if-exists: [ package.json ]
+  Cargo (Rust):
+    excludes: [ target ]
+    if-exists: [ Cargo.toml ]
+  Maven:
+    excludes: [ target ]
+    if-exists: [ pom.xml ]
+  Composer (PHP):
+    excludes: [ vendor ]
+    if-exists: [ composer.json ]
+  Bundler (Ruby):
+    excludes: [ vendor ]
+    if-exists: [ Gemfile ]
+  Go Modules (Golang):
+    excludes: [ vendor ]
+    if-exists: [ go.mod ]
+  Mix dependencies (Elixir):
+    excludes: [ deps ]
+    if-exists: [ mix.exs ]
+  Mix build files (Elixir):
+    excludes: [ ".build" ]
+    if-exists: [ mix.exs ]
