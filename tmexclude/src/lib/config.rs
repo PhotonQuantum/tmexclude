@@ -254,7 +254,7 @@ impl WalkConfig {
             skips: skips
                 .into_iter()
                 .flat_map(|path| follow_symlinks(PathBuf::from(shellexpand::tilde(&path).as_ref())))
-                .map(|path| absolute(path))
+                .map(absolute)
                 .collect(),
         })
     }
@@ -543,6 +543,6 @@ mod test {
                 cwd_path!("tests/symlinks/cyclic_a"),
                 cwd_path!("tests/symlinks/cyclic_b"),
             ]
-        )
+        );
     }
 }
