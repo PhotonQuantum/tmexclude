@@ -5,59 +5,32 @@ use std::time::Duration;
 use actix::{Actor, Addr, Context, Handler, Message};
 use actix_signal::AddrSignalExt;
 use eyre::Report;
-use figment::Provider;
 
-use crate::config::Config;
+use crate::config::{Config, ConfigFactory};
 use crate::walker::{SkipCache, Walker};
 use crate::watcher::{RegisterWatcher, Watcher};
 
 const EVENT_DELAY: Duration = Duration::from_secs(30);
 
-/// Helper trait for fallible functions that returns a provider.
-pub trait ProviderFactory: 'static + Unpin {
-    /// Concrete provider type
-    type Provider: Provider;
-    /// Returns a provider.
-    ///
-    /// # Errors
-    /// Forwards eyre error.
-    fn call(&self) -> Result<Self::Provider, Report>;
-}
-
-impl<F, P, E> ProviderFactory for F
-where
-    F: Fn() -> Result<P, E>,
-    P: Provider,
-    E: Into<Report>,
-    Self: 'static + Unpin,
-{
-    type Provider = P;
-
-    fn call(&self) -> Result<Self::Provider, Report> {
-        (*self)().map_err(Into::into)
-    }
-}
-
 /// Daemon actor.
 pub struct Daemon<F> {
-    provider_factory: F,
+    config_factory: F,
     config: Config,
     handler: Option<Addr<Watcher>>,
 }
 
 impl<F> Daemon<F>
 where
-    F: ProviderFactory,
+    F: ConfigFactory,
 {
     /// Construct a new daemon actor.
     ///
     /// # Errors
     /// Returns `ConfigError` if fails to load config with given factory.
-    pub fn new(provider_factory: F) -> Result<Self, Report> {
-        let provider = provider_factory.call()?;
-        let config = Config::from(provider)?;
+    pub fn new(deserializer_factory: F) -> Result<Self, Report> {
+        let config = deserializer_factory.call()?;
         Ok(Self {
-            provider_factory,
+            config_factory: deserializer_factory,
             config,
             handler: None,
         })
@@ -111,13 +84,12 @@ pub struct Reload;
 
 impl<F> Handler<Reload> for Daemon<F>
 where
-    F: ProviderFactory,
+    F: ConfigFactory,
 {
     type Result = Result<(), Report>;
 
     fn handle(&mut self, _: Reload, _: &mut Self::Context) -> Self::Result {
-        let provider = self.provider_factory.call()?;
-        self.config = Config::from(provider)?;
+        self.config = self.config_factory.call()?;
         self.start();
         Ok(())
     }

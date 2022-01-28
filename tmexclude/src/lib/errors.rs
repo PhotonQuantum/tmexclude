@@ -12,9 +12,9 @@ use thiserror::Error;
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug, Error)]
 pub enum ConfigError {
-    /// Error returned by figment.
-    #[error("Error when loading config file")]
-    Figment(#[from] figment::Error),
+    /// Error returned by serde deserializer.
+    #[error("Error when deserializing config file")]
+    Deserialize(#[source] Box<dyn Error + Send + Sync>),
     /// Missing rule.
     #[error("Missing rule: {0}")]
     Rule(String),
@@ -29,9 +29,6 @@ pub enum ConfigError {
         /// The underlying IO error.
         source: std::io::Error,
     },
-    /// Error occur in factory.
-    #[error("{0}")]
-    Factory(Report),
     /// Missing rule.
     #[error("Loop found in rules. Rendezvous point: {0}")]
     Loop(String),

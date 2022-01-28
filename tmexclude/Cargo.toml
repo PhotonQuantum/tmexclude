@@ -25,7 +25,6 @@ crossbeam-queue = "0.3"
 dialoguer = { version = "0.9", default-features = false }
 directories = "4.0"
 eyre = "0.6"
-figment = { version = "0.10", features = ["toml", "yaml"] }
 fs2 = "0.4"
 fsevent-stream = "0.2"
 futures-util = { version = "0.3", features = ["sink"] }
@@ -44,6 +43,7 @@ parking_lot = "0.11"
 pretty_env_logger = "0.4"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+serde_yaml = "0.8"
 shellexpand = "2.1"
 signal-hook = "0.3"
 signal-hook-tokio = { version = "0.3", features = ["futures-v0_3"] }
@@ -53,7 +53,9 @@ thiserror = "1.0"
 tokio = { version = "1.16", features = ["sync", "macros"] }
 tokio-serde = { version = "0.8", features = ["bincode"] }
 tokio-util = { version = "0.6", features = ["codec"] }
+toml = "0.5"
 xattr = "0.2"
 
 [dev-dependencies]
+assert_cmd = "2.0"
 tempfile = "3.3"

@@ -76,7 +76,8 @@ pub mod server {
     use tokio_serde::Framed as SerdeFramed;
     use tokio_util::codec::{Framed, LengthDelimitedCodec};
 
-    use crate::daemon::{Daemon, Pause, ProviderFactory, Reload, Restart};
+    use crate::config::ConfigFactory;
+    use crate::daemon::{Daemon, Pause, Reload, Restart};
     use crate::rpc::{Body, Request, Response, PROTOCOL_VERSION};
 
     /// Start the RPC server.
@@ -85,7 +86,7 @@ pub mod server {
     /// `io::Error` if can't bind to given Unix domain socket.
     pub async fn start_server<F>(uds: impl AsRef<Path>, daemon: Addr<Daemon<F>>) -> io::Result<()>
     where
-        F: ProviderFactory,
+        F: ConfigFactory,
     {
         let listener = UnixListener::bind(uds)?;
         info!("Server started.");
@@ -148,7 +149,7 @@ pub mod server {
         daemon: &Addr<Daemon<F>>,
     ) -> ControlFlow<Body, Body>
     where
-        F: ProviderFactory,
+        F: ConfigFactory,
     {
         ControlFlow::Continue(match request {
             Request::Pause => match daemon.send(Pause).await {

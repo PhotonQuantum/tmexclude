@@ -1,42 +1,7 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use directories::ProjectDirs;
 use eyre::{eyre, Result, WrapErr};
-use figment::providers::{Data, Format, Toml, Yaml};
-use figment::value::{Dict, Map};
-use figment::{Error, Metadata, Profile, Provider};
-
-pub enum FlexiProvider {
-    Yaml(Data<Yaml>),
-    Toml(Data<Toml>),
-}
-
-impl<P: AsRef<Path>> From<P> for FlexiProvider {
-    fn from(path: P) -> Self {
-        let path = path.as_ref();
-        if path.extension().unwrap_or_default().eq(Path::new("toml")) {
-            Self::Toml(Toml::file(path))
-        } else {
-            Self::Yaml(Yaml::file(path))
-        }
-    }
-}
-
-impl Provider for FlexiProvider {
-    fn metadata(&self) -> Metadata {
-        match self {
-            Self::Yaml(p) => p.metadata(),
-            Self::Toml(p) => p.metadata(),
-        }
-    }
-
-    fn data(&self) -> Result<Map<Profile, Dict>, Error> {
-        match self {
-            Self::Yaml(p) => p.data(),
-            Self::Toml(p) => p.data(),
-        }
-    }
-}
 
 pub fn ensure_state_dir() -> Result<PathBuf> {
     let state_dir = ProjectDirs::from("me", "lightquantum", "tmexclude")

@@ -4,15 +4,14 @@ use clap::Parser;
 use console::Emoji;
 use eyre::Result;
 
-use tmexclude_lib::config::Config;
 use tmexclude_lib::rpc::Request;
 
 use crate::args::{AgentCommand, Arg, Command, DaemonArgs, ScanArgs};
 use crate::client::client;
-use crate::common::{collect_provider, initialize_loggers};
+use crate::common::{collect_config, initialize_loggers};
 use crate::daemon::daemon;
 use crate::scan::scan;
-use crate::utils::{ensure_state_dir, FlexiProvider};
+use crate::utils::ensure_state_dir;
 
 mod agent;
 mod args;
@@ -43,17 +42,15 @@ fn run() -> Result<()> {
             initialize_loggers()?;
 
             let uds = uds.clone();
-            let config_path = args.config.as_ref().and_then(|p| p.canonicalize().ok());
-            let provider = move || collect_provider(config_path.clone());
-            daemon(provider, uds)
+            let config_factory = move || collect_config(args.config.clone());
+            daemon(config_factory, uds)
         }
         Command::Scan(ScanArgs {
             dry_run,
             noconfirm,
             uds,
         }) => {
-            let config_path = args.config.as_ref().and_then(|p| p.canonicalize().ok());
-            let config = Config::from(collect_provider(config_path)?)?;
+            let config = collect_config(args.config)?;
             scan(config, uds.clone(), !*noconfirm, *dry_run)
         }
         Command::Client(cmd) => {
@@ -64,5 +61,11 @@ fn run() -> Result<()> {
         Command::Agent(AgentCommand::Start) => agent::start(),
         Command::Agent(AgentCommand::Stop) => agent::stop(),
         Command::Agent(AgentCommand::Restart) => agent::restart(),
+        #[cfg(debug_assertions)]
+        Command::ReadConfig => {
+            let config = collect_config(args.config)?;
+            println!("{:#?}", config);
+            Ok(())
+        }
     }
 }

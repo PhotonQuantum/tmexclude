@@ -3,19 +3,21 @@ use std::fs::File;
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 
-use directories::UserDirs;
-use eyre::{eyre, Result, WrapErr};
-use figment::Figment;
+use directories::BaseDirs;
+use eyre::{eyre, Report, Result, WrapErr};
 use fs2::FileExt;
 use log::Level;
 use multi_log::MultiLogger;
 use oslog::OsLogger;
 
+use tmexclude_lib::config::Config;
 use tmexclude_lib::errors::SuggestionExt;
 use tmexclude_lib::rpc::Request;
 
 use crate::args::{ClientArgs, ClientCommand};
-use crate::{ensure_state_dir, FlexiProvider};
+use crate::ensure_state_dir;
+
+const DEFAULT_CONFIG: &str = include_str!("../../config.example.yaml");
 
 pub fn initialize_loggers() -> Result<()> {
     let mut env_logger_builder = pretty_env_logger::formatted_builder();
@@ -31,24 +33,37 @@ pub fn initialize_loggers() -> Result<()> {
     )?)
 }
 
-pub fn collect_provider(path: Option<PathBuf>) -> Result<Figment> {
-    let default_path = path.is_none();
-    let path = match path {
-        None => UserDirs::new()
-            .ok_or_else(|| eyre!("Home directory not found"))?
-            .home_dir()
-            .join(".tmexclude.yaml"),
-        Some(path) => path,
-    };
-    if !path.is_file() {
-        return Err(eyre!("Config file not found: {:?}", path).with_suggestion(|| if default_path {
-            "please ensure the config file exists, or maybe you want to specify your config manually (--config)?"
-        } else {
-            "please ensure the config file exists on your given path"
-        }));
-    }
+pub fn collect_config(path: Option<PathBuf>) -> Result<Config> {
+    let path = path
+        .map(|p| p.canonicalize().unwrap_or_else(|_| p.clone()))
+        .ok_or(())
+        .or_else::<Report, _>(|_| {
+            let config_dir = BaseDirs::new()
+                .ok_or_else(|| eyre!("Home directory not found"))?
+                .home_dir()
+                .join(".config");
+            fs::create_dir_all(&config_dir).wrap_err("Failed to create config directory")?;
 
-    Ok(Figment::new().merge(FlexiProvider::from(path)))
+            let path = config_dir.join("tmexclude.yaml");
+            if !path.exists() {
+                fs::write(&path, DEFAULT_CONFIG).wrap_err("Failed to write default config")?;
+            }
+
+            Ok(path)
+        })?;
+
+    let body = fs::read_to_string(&path)
+        .wrap_err(format!("Config file not found: {:?}", path))
+        .suggestion("please ensure the config file exists on your given path")?;
+    Ok(
+        if path.extension().unwrap_or_default().eq(Path::new("toml")) {
+            let de = &mut toml::Deserializer::new(body.as_str());
+            Config::from(de)?
+        } else {
+            let de = serde_yaml::Deserializer::from_str(body.as_str());
+            Config::from(de)?
+        },
+    )
 }
 
 pub struct UdsGuard {

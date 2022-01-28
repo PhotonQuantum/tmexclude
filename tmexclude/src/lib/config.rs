@@ -2,19 +2,40 @@
 //!
 //! The config is synchronized by design so it can be hot-reloaded.
 use std::collections::{HashMap, HashSet};
-use std::fmt::Debug;
+use std::error::Error;
+use std::fmt::{Debug, Display, Formatter};
 use std::io::ErrorKind;
 use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 
-use figment::{Figment, Provider};
+use eyre::Report;
 use itertools::Itertools;
 use log::warn;
 use maplit::hashset;
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
 use tap::TapFallible;
 
 use crate::errors::ConfigError;
+
+/// Helper trait for fallible functions that returns a config.
+pub trait ConfigFactory: 'static + Unpin {
+    /// Returns a config.
+    ///
+    /// # Errors
+    /// Forwards eyre error.
+    fn call(&self) -> Result<Config, Report>;
+}
+
+impl<F, E> ConfigFactory for F
+where
+    F: Fn() -> Result<Config, E>,
+    E: Into<Report>,
+    Self: 'static + Unpin,
+{
+    fn call(&self) -> Result<Config, Report> {
+        (*self)().map_err(Into::into)
+    }
+}
 
 /// Main config type used throughout the application.
 #[derive(Debug, Clone)]
@@ -26,14 +47,14 @@ pub struct Config {
 }
 
 impl Config {
-    /// Load config from provider.
+    /// Load config from deserializer.
     ///
     /// # Errors
-    /// `Figment` if error occurs when collecting config.
+    /// `Deserializer` if error occurs when deserializing config.
     /// `Rule` if rule name is referenced but not defined.
     /// `NotADirectory` if there's directory given but not found.
-    pub fn from(provider: impl Provider) -> Result<Self, ConfigError> {
-        let pre_config = PreConfig::from(provider)?;
+    pub fn from<'de>(deserializer: impl Deserializer<'de>) -> Result<Self, ConfigError> {
+        let pre_config = PreConfig::from(deserializer)?;
         Ok(Self {
             no_include: pre_config.no_include,
             walk: WalkConfig::from(pre_config.directories, &pre_config.rules, pre_config.skips)?,
@@ -257,10 +278,22 @@ enum PreRule {
 }
 
 impl PreConfig {
-    fn from(provider: impl Provider) -> Result<Self, figment::Error> {
-        Figment::from(provider).extract()
+    fn from<'de>(deserializer: impl Deserializer<'de>) -> Result<Self, ConfigError> {
+        Self::deserialize(deserializer)
+            .map_err(|e| ConfigError::Deserialize(Box::new(AdhocError(e.to_string()))))
     }
 }
+
+#[derive(Debug)]
+struct AdhocError(String);
+
+impl Display for AdhocError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        Display::fmt(&self.0, f)
+    }
+}
+
+impl Error for AdhocError {}
 
 #[cfg(test)]
 mod test {
@@ -269,7 +302,6 @@ mod test {
     use std::path::{Path, PathBuf};
     use std::str::FromStr;
 
-    use figment::providers::{Format, Yaml};
     use itertools::Itertools;
     use maplit::hashset;
 
@@ -304,8 +336,10 @@ mod test {
 
     #[test]
     fn must_parse_simple() {
-        static SIMPLE: &str = include_str!("../../tests/configs/simple.yaml");
-        let config = Config::from(Yaml::string(SIMPLE)).expect("must parse config");
+        let config = Config::from(serde_yaml::Deserializer::from_str(include_str!(
+            "../../tests/configs/simple.yaml"
+        )))
+        .expect("must parse config");
 
         let rule_a = Rule {
             excludes: vec![path!("exclude_a")],
@@ -341,8 +375,10 @@ mod test {
 
     #[test]
     fn must_test_inherit_rule() {
-        static INHERIT_RULE: &str = include_str!("../../tests/configs/inherit_rule.yaml");
-        let config = Config::from(Yaml::string(INHERIT_RULE)).expect("must parse config");
+        let config = Config::from(serde_yaml::Deserializer::from_str(include_str!(
+            "../../tests/configs/inherit_rule.yaml"
+        )))
+        .expect("must parse config");
 
         let directories_rules = config
             .walk
@@ -367,9 +403,11 @@ mod test {
 
     #[test]
     fn must_fail_inherit_rule_loop() {
-        static INHERIT_RULE_LOOP: &str = include_str!("../../tests/configs/inherit_rule_loop.yaml");
-        let provider = Yaml::string(INHERIT_RULE_LOOP);
-        let error = Config::from(provider).expect_err("must fail");
+        let error = Config::from(serde_yaml::Deserializer::from_str(include_str!(
+            "../../tests/configs/inherit_rule_loop.yaml"
+        )))
+        .expect_err("must fail");
+
         match error {
             ConfigError::Loop(path) => assert_eq!(path, "a"),
             _ => panic!("Error type mismatch"),
@@ -378,9 +416,11 @@ mod test {
 
     #[test]
     fn must_fail_broken_rule() {
-        static BROKEN: &str = include_str!("../../tests/configs/broken_rule.yaml");
-        let provider = Yaml::string(BROKEN);
-        let error = Config::from(provider).expect_err("must fail");
+        let error = Config::from(serde_yaml::Deserializer::from_str(include_str!(
+            "../../tests/configs/broken_rule.yaml"
+        )))
+        .expect_err("must fail");
+
         match error {
             ConfigError::Rule(path) => assert_eq!(path, "a"),
             _ => panic!("Error type mismatch"),
@@ -389,9 +429,10 @@ mod test {
 
     #[test]
     fn must_fail_broken_dir() {
-        static BROKEN: &str = include_str!("../../tests/configs/broken_dir.yaml");
-        let provider = Yaml::string(BROKEN);
-        let error = Config::from(provider).expect_err("must fail");
+        let error = Config::from(serde_yaml::Deserializer::from_str(include_str!(
+            "../../tests/configs/broken_dir.yaml"
+        )))
+        .expect_err("must fail");
 
         match error {
             ConfigError::InvalidPath { path, source } => {
@@ -404,9 +445,10 @@ mod test {
 
     #[test]
     fn must_fail_missing_dir() {
-        static BROKEN: &str = include_str!("../../tests/configs/missing_dir.yaml");
-        let provider = Yaml::string(BROKEN);
-        let error = Config::from(provider).expect_err("must fail");
+        let error = Config::from(serde_yaml::Deserializer::from_str(include_str!(
+            "../../tests/configs/missing_dir.yaml"
+        )))
+        .expect_err("must fail");
 
         match error {
             ConfigError::InvalidPath { path, source } => {
@@ -419,12 +461,12 @@ mod test {
 
     #[test]
     fn must_allow_missing_skip_dir() {
-        static BROKEN: &str = include_str!("../../tests/configs/allow_missing_skip_dir.yaml");
-        let provider = Yaml::string(BROKEN);
-        assert_eq!(
-            Config::from(provider).expect("must parse config").walk,
-            WalkConfig::default()
-        );
+        let config = Config::from(serde_yaml::Deserializer::from_str(include_str!(
+            "../../tests/configs/allow_missing_skip_dir.yaml"
+        )))
+        .expect("must parse config");
+
+        assert_eq!(config.walk, WalkConfig::default());
     }
 
     #[test]

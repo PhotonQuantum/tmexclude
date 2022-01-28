@@ -24,6 +24,8 @@ pub enum Command {
     Scan(ScanArgs),
     #[clap(flatten)]
     Client(ClientCommand),
+    #[cfg(debug_assertions)]
+    ReadConfig,
 }
 
 #[derive(Debug, Subcommand)]
