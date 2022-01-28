@@ -1,0 +1,4 @@
+skips:
+  - tests/symlinks/three
+  - tests/symlinks/invalid
+  - tests/symlinks/cyclic_a

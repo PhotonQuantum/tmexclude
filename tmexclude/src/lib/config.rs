@@ -5,6 +5,7 @@ use std::collections::{HashMap, HashSet};
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 use std::io::ErrorKind;
+use std::iter;
 use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 
@@ -173,6 +174,34 @@ fn dfs_union_rules<'a, 'b>(
     })
 }
 
+fn follow_symlinks(path: PathBuf) -> impl Iterator<Item = PathBuf> {
+    let mut visited = hashset![path.clone()];
+    iter::successors(Some(path), move |path| {
+        path.read_link()
+            .map(|parts| path.parent().unwrap_or(path).join(parts))
+            .tap_err(|e| match e.kind() {
+                ErrorKind::NotFound | ErrorKind::InvalidInput => (),
+                _ => warn!("Error when following symlink: {}", e),
+            })
+            .ok()
+            .and_then(|path| {
+                if visited.contains(&path) {
+                    warn!("Cyclic symlink detected");
+                    None
+                } else {
+                    visited.insert(path.clone());
+                    Some(path)
+                }
+            })
+    })
+}
+
+fn absolute(path: impl AsRef<Path>) -> PathBuf {
+    std::env::current_dir()
+        .expect("current dir must exist")
+        .join(path)
+}
+
 impl WalkConfig {
     fn from(
         directories: Vec<PreDirectory>,
@@ -200,7 +229,7 @@ impl WalkConfig {
                         })
                         .and_then(|rules| {
                             PathBuf::from(shellexpand::tilde(&pre_directory.path).as_ref())
-                                .canonicalize()
+                                .canonicalize() // canonicalize here because fsevent api always returns absolute paths
                                 .map_err(|e| ConfigError::InvalidPath {
                                     path: pre_directory.path.clone(),
                                     source: e,
@@ -224,14 +253,8 @@ impl WalkConfig {
                 .try_collect()?,
             skips: skips
                 .into_iter()
-                .filter_map(|path| {
-                    PathBuf::from(shellexpand::tilde(&path).as_ref())
-                        .canonicalize()
-                        .tap_err(|e| {
-                            warn!("Error when parsing skipped path {}: {}", path, e);
-                        })
-                        .ok()
-                })
+                .flat_map(|path| follow_symlinks(PathBuf::from(shellexpand::tilde(&path).as_ref())))
+                .map(|path| absolute(path))
                 .collect(),
         })
     }
@@ -466,7 +489,10 @@ mod test {
         )))
         .expect("must parse config");
 
-        assert_eq!(config.walk, WalkConfig::default());
+        assert_eq!(
+            config.walk.skips,
+            hashset![cwd_path!("tests/mock_dirs/non_exist")]
+        );
     }
 
     #[test]
@@ -496,5 +522,27 @@ mod test {
             get_paths(&directories!["/e", "/a/b/c", "/a/e", "/a/b/d", "/a/b/d/e"]),
             hashset! {Path::new("/a/b/c"), Path::new("/a/b/d"), Path::new("/a/e"), Path::new("/e")}
         );
+    }
+
+    #[test]
+    fn must_canonicalize_rule_follow_skip() {
+        let config = Config::from(serde_yaml::Deserializer::from_str(include_str!(
+            "../../tests/configs/follow_symlink.yaml"
+        )))
+        .expect("must parse config");
+
+        assert_eq!(
+            config.walk.skips,
+            hashset![
+                cwd_path!("tests/symlinks/three"),
+                cwd_path!("tests/symlinks/two"),
+                cwd_path!("tests/symlinks/one"),
+                cwd_path!("tests/symlinks/concrete"),
+                cwd_path!("tests/symlinks/invalid"),
+                cwd_path!("tests/symlinks/missing"),
+                cwd_path!("tests/symlinks/cyclic_a"),
+                cwd_path!("tests/symlinks/cyclic_b"),
+            ]
+        )
     }
 }
