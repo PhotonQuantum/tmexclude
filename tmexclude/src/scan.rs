@@ -57,7 +57,10 @@ pub fn scan(config: Config, uds: Option<PathBuf>, interactive: bool, dry_run: bo
                 guard.release().await;
             });
             let plural = if count == 1 { "" } else { "s" };
-            println!("\n{}Done. {} change{} applied.", PARTY_POPPER, count, plural);
+            println!(
+                "\n{}Done. {} change{} applied.",
+                PARTY_POPPER, count, plural
+            );
         } else {
             println!("\n{}", style("Aborted.").red());
         }
@@ -73,10 +76,7 @@ fn report_pending_actions(actions: &ExclusionActionBatch, no_include: bool) {
         "{}",
         style(format!(
             "{}Scan complete. There {} {} action{} to be reviewed.",
-            SPARKLE,
-            be,
-            count,
-            plural
+            SPARKLE, be, count, plural
         ))
         .green()
     );
