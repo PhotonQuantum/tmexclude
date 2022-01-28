@@ -1,7 +1,12 @@
+# Don't include files into backups even if they don't match the rules.
 no-include: true
+
+# Directories to scan and rules to apply.
 directories:
   - path: ~/
     rules: [ Development ]
+
+# Skip the following paths.
 skips:
   - ~/Library
   - ~/Pictures
@@ -11,8 +16,15 @@ skips:
   - ~/.dropbox
   - ~/.Trash
   - ~/.pnpm-store
+  # These directories trigger permission request dialogs repeatedly in daemon mode.
+  - ~/Downloads
+  - ~/Desktop
+  - ~/Documents
+
+# Exclude paths that match these patterns. Notice that they must be referenced by at least one `directories` entry above to take effect.
 rules:
-  # adopted from [asimov](https://github.com/stevegrunwell/asimov)
+  # You may merge other rules by defining an array.
+  # The development rules are adopted from [asimov](https://github.com/stevegrunwell/asimov)
   Development:
     - Swift
     - Gradle
@@ -37,7 +49,9 @@ rules:
     - Mix dependencies (Elixir)
     - Mix build files (Elixir)
   Swift:
+    # Paths to exclude.
     excludes: [ ".build" ]
+    # ... only if ANY of these paths exists adjacently.
     if-exists: [ Package.swift ]
   Gradle:
     excludes: [ build ]
