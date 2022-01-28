@@ -17,6 +17,7 @@ use crate::spinner::Spinner;
 
 static LOOKING_GLASS: Emoji<'_, '_> = Emoji("🔍  ", "");
 static SPARKLE: Emoji<'_, '_> = Emoji("✨  ", ":-)");
+static PARTY_POPPER: Emoji<'_, '_> = Emoji("🎉  ", ":-)");
 static HAMMER: Emoji<'_, '_> = Emoji("🔨  ", "");
 
 pub fn scan(config: Config, uds: Option<PathBuf>, interactive: bool, dry_run: bool) -> Result<()> {
@@ -39,22 +40,24 @@ pub fn scan(config: Config, uds: Option<PathBuf>, interactive: bool, dry_run: bo
     }
 
     if dry_run || pending_actions.is_empty() {
-        println!("\n{}Done. No changes to apply.", SPARKLE);
+        println!("\n{}Done. No changes to apply.", PARTY_POPPER);
     } else {
         let proceed = !interactive
             || Confirm::new()
-                .with_prompt("Proceed?")
+                .with_prompt(style("Proceed?").blue().to_string())
                 .default(false)
                 .interact()
                 .unwrap_or(false);
         if proceed {
+            let count = pending_actions.count();
             System::new().block_on(async move {
                 let _spinner = Spinner::new(format!("{}Applying changes...", HAMMER));
                 let guard = DaemonGuard::new(uds).await;
                 pending_actions.apply();
                 guard.release().await;
             });
-            println!("\n{}Done.", SPARKLE);
+            let plural = if count == 1 { "" } else { "s" };
+            println!("\n{}Done. {} change{} applied.", PARTY_POPPER, count, plural);
         } else {
             println!("\n{}", style("Aborted.").red());
         }
@@ -64,11 +67,16 @@ pub fn scan(config: Config, uds: Option<PathBuf>, interactive: bool, dry_run: bo
 }
 
 fn report_pending_actions(actions: &ExclusionActionBatch, no_include: bool) {
+    let count = actions.count();
+    let (be, plural) = if count == 1 { ("is", "") } else { ("are", "s") };
     println!(
         "{}",
         style(format!(
-            "Scan complete. There are {} action(s) to be reviewed.",
-            actions.count()
+            "{}Scan complete. There {} {} action{} to be reviewed.",
+            SPARKLE,
+            be,
+            count,
+            plural
         ))
         .green()
     );
