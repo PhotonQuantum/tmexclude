@@ -5,13 +5,7 @@ Exclude undesired files (node_modules, target, etc) from your TimeMachine backup
 This utility watches your filesystem and excludes the files once they appear, so you won't accidentally include them
 in your backups. Full scans can also be performed manually to ensure no file slips through the watcher.
 
-## Screenshots
-
-### Daemon mode
-[![daemon](screenshots/daemon.gif)](https://asciinema.org/a/465340)
-
-### Scan mode
-[![scan](screenshots/scan.gif)](https://asciinema.org/a/465339)
+Screenshots available [here](#screenshots).
 
 ## Installation
 
@@ -72,6 +66,14 @@ default config. If you don't need the `daemon` mode, feel free to remove them.
 
 It's possible that the annoying dialogs may go away once you grant `tmexclude` full disk access. I've never tested it,
 however.
+
+## Screenshots
+
+### Daemon mode
+[![daemon](screenshots/daemon.gif)](https://asciinema.org/a/465340)
+
+### Scan mode
+[![scan](screenshots/scan.gif)](https://asciinema.org/a/465339)
 
 ## License
 
