@@ -8,10 +8,10 @@ in your backups. Full scans can also be performed manually to ensure no file sli
 ## Screenshots
 
 ### Daemon mode
-![daemon](screenshots/daemon.gif)
+[![daemon](screenshots/daemon.gif)](https://asciinema.org/a/465340)
 
 ### Scan mode
-![scan](screenshots/scan.gif)
+[![scan](screenshots/scan.gif)](https://asciinema.org/a/465339)
 
 ## Installation
 
