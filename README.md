@@ -7,6 +7,8 @@ in your backups. Full scans can also be performed manually to ensure no file sli
 
 Screenshots available [here](#screenshots).
 
+*If you find this utility useful, please consider [buy me a coffee](https://buymeacoffee.com/lightquantum).*
+
 ## Installation
 
 ### Homebrew
