@@ -5,6 +5,14 @@ Exclude undesired files (node_modules, target, etc) from your TimeMachine backup
 This utility watches your filesystem and excludes the files once they appear, so you won't accidentally include them
 in your backups. Full scans can also be performed manually to ensure no file slips through the watcher.
 
+## Screenshots
+
+### Daemon mode
+![daemon](screenshots/daemon.gif)
+
+### Scan mode
+![scan](screenshots/scan.gif)
+
 ## Installation
 
 ### Homebrew
