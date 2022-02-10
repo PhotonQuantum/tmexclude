@@ -13,7 +13,7 @@ use tmexclude_lib::tmutil::ExclusionActionBatch;
 use tmexclude_lib::walker::walk_recursive;
 
 use crate::common::ensure_uds_path;
-use crate::spinner::Spinner;
+use crate::utils::spinner;
 
 static LOOKING_GLASS: Emoji<'_, '_> = Emoji("🔍  ", "");
 static SPARKLE: Emoji<'_, '_> = Emoji("✨  ", ":-)");
@@ -22,7 +22,7 @@ static HAMMER: Emoji<'_, '_> = Emoji("🔨  ", "");
 
 pub fn scan(config: Config, uds: Option<PathBuf>, interactive: bool, dry_run: bool) -> Result<()> {
     let mut pending_actions = {
-        let _spinner = Spinner::new(format!(
+        let _spinner = spinner(format!(
             "{}Scanning filesystem for files to exclude...",
             LOOKING_GLASS
         ));
@@ -51,7 +51,7 @@ pub fn scan(config: Config, uds: Option<PathBuf>, interactive: bool, dry_run: bo
         if proceed {
             let count = pending_actions.count();
             System::new().block_on(async move {
-                let _spinner = Spinner::new(format!("{}Applying changes...", HAMMER));
+                let _spinner = spinner(format!("{}Applying changes...", HAMMER));
                 let guard = DaemonGuard::new(uds).await;
                 pending_actions.apply();
                 guard.release().await;

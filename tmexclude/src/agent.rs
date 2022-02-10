@@ -9,7 +9,7 @@ use directories::UserDirs;
 use eyre::{bail, eyre, Result};
 
 use crate::consts::LABEL;
-use crate::spinner::Spinner;
+use crate::utils::spinner;
 
 const LAUNCH_PLIST: &str = include_str!("../../launch.plist");
 
@@ -83,17 +83,17 @@ fn agent_path() -> Result<PathBuf> {
 }
 
 pub fn start() -> Result<()> {
-    let _spinner = Spinner::new("Starting tmexclude...");
+    let _spinner = spinner("Starting tmexclude...");
     start_impl()
 }
 
 pub fn stop() -> Result<()> {
-    let _spinner = Spinner::new("Stopping tmexclude...");
+    let _spinner = spinner("Stopping tmexclude...");
     stop_impl()
 }
 
 pub fn restart() -> Result<()> {
-    let _spinner = Spinner::new("Restarting tmexclude...");
+    let _spinner = spinner("Restarting tmexclude...");
     stop_impl().and_then(|_| start_impl())
 }
 

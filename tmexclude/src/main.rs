@@ -20,7 +20,6 @@ mod common;
 mod consts;
 mod daemon;
 mod scan;
-mod spinner;
 mod utils;
 
 static EXCLAIMING: Emoji<'_, '_> = Emoji("❗️  ", "");
