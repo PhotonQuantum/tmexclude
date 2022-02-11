@@ -52,7 +52,7 @@ template-eyre = "0.1.0-alpha.6"
 thiserror = "1.0"
 tokio = { version = "1.16", features = ["sync", "macros"] }
 tokio-serde = { version = "0.8", features = ["bincode"] }
-tokio-util = { version = "0.6", features = ["codec"] }
+tokio-util = { version = "0.7", features = ["codec"] }
 toml = "0.5"
 xattr = "0.2"
 
