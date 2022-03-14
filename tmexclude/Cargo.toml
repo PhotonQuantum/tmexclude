@@ -29,7 +29,7 @@ fs2 = "0.4"
 fsevent-stream = "0.2"
 futures-util = { version = "0.3", features = ["sink"] }
 humantime = "2.1"
-humantime-serde = "1.0"
+humantime-serde = "1.1"
 indicatif = "0.16"
 itertools = "0.10"
 jwalk = "0.6"
