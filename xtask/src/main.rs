@@ -2,15 +2,9 @@ use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 
 use clap::{Parser, Subcommand};
-use xshell::{cmd, cp, mkdir_p, rm_rf, write_file};
+use xshell::{cmd, Shell};
 
 const FORMULA_TEMPLATE: &str = include_str!("../../formula.rb");
-
-macro_rules! p {
-    ($path: literal) => {
-        Path::new($path)
-    };
-}
 
 #[derive(Debug, Parser)]
 struct Args {
@@ -66,9 +60,13 @@ fn main() {
 }
 
 fn build(arch: impl AsRef<OsStr>) {
-    cmd!("cargo build --package tmexclude --release --target={arch}-apple-darwin")
-        .run()
-        .unwrap();
+    let sh = Shell::new().unwrap();
+    cmd!(
+        sh,
+        "cargo build --package tmexclude --release --target={arch}-apple-darwin"
+    )
+    .run()
+    .unwrap();
 }
 
 fn build_all() {
@@ -77,36 +75,41 @@ fn build_all() {
 }
 
 fn lipo(output: impl AsRef<Path>) {
+    let sh = Shell::new().unwrap();
     let output = output.as_ref();
+
     build_all();
-    mkdir_p(output.parent().unwrap()).unwrap();
-    cmd!("lipo -create -output {output} target/aarch64-apple-darwin/release/tmexclude target/x86_64-apple-darwin/release/tmexclude").run().unwrap();
+    sh.create_dir(output.parent().unwrap()).unwrap();
+    cmd!(sh, "lipo -create -output {output} target/aarch64-apple-darwin/release/tmexclude target/x86_64-apple-darwin/release/tmexclude").run().unwrap();
 }
 
 fn compgen(output: impl AsRef<Path>) {
+    let sh = Shell::new().unwrap();
     let output = output.as_ref();
-    cmd!("cargo compgen -s bash {output}").run().unwrap();
-    cmd!("cargo compgen -s zsh {output}").run().unwrap();
-    cmd!("cargo compgen -s fish {output}").run().unwrap();
+    cmd!(sh, "cargo compgen -s bash {output}").run().unwrap();
+    cmd!(sh, "cargo compgen -s zsh {output}").run().unwrap();
+    cmd!(sh, "cargo compgen -s fish {output}").run().unwrap();
 }
 
 fn dist() {
-    compgen(p!("./dist/completion"));
-    lipo(p!("./dist/tmexclude"));
-    cp(p!("launch.plist"), p!("./dist/launch.plist")).unwrap();
+    let sh = Shell::new().unwrap();
+    compgen("./dist/completion");
+    lipo("./dist/tmexclude");
+    sh.copy_file("launch.plist", "./dist/launch.plist").unwrap();
 }
 
 fn release() {
+    let sh = Shell::new().unwrap();
     dist();
-    mkdir_p("./release").unwrap();
+    sh.create_dir("./release").unwrap();
 
     let tag = tag();
     let tar_file = format!("tmexclude-{tag}.tar.gz");
 
-    cmd!("tar czvf ./release/{tar_file} --strip=2 ./dist")
+    cmd!(sh, "tar czvf ./release/{tar_file} --strip=2 ./dist")
         .run()
         .unwrap();
-    let checksum = cmd!("shasum -a 256 ./release/{tar_file}")
+    let checksum = cmd!(sh, "shasum -a 256 ./release/{tar_file}")
         .read()
         .unwrap()
         .split_once(" ")
@@ -115,14 +118,15 @@ fn release() {
         .to_string();
 
     let formula = gen_formula(tag.as_str(), checksum.as_str());
-    write_file("./release/tmexclude.rb", formula).unwrap();
+    sh.write_file("./release/tmexclude.rb", formula).unwrap();
 }
 
 fn clean(target: bool) {
-    rm_rf("./dist").unwrap();
-    rm_rf("./release").unwrap();
+    let sh = Shell::new().unwrap();
+    sh.remove_path("./dist").unwrap();
+    sh.remove_path("./release").unwrap();
     if target {
-        cmd!("cargo clean").run().unwrap();
+        cmd!(sh, "cargo clean").run().unwrap();
     }
 }
 
@@ -133,7 +137,8 @@ fn gen_formula(tag: &str, sha256: &str) -> String {
 }
 
 fn tag() -> String {
-    cmd!("git describe --tags --abbrev=0")
+    let sh = Shell::new().unwrap();
+    cmd!(sh, "git describe --tags --abbrev=0")
         .read()
         .unwrap()
         .trim_start_matches('v')

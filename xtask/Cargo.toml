@@ -6,4 +6,4 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "3.1", features = ["derive"] }
-xshell = "0.1"
+xshell = "0.2"

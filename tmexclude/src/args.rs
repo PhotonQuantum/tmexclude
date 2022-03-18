@@ -1,9 +1,10 @@
 use std::path::PathBuf;
 
-use clap::{AppSettings, Args, Parser, Subcommand};
+use clap::{Args, Parser, Subcommand};
 
 #[derive(Debug, Parser)]
-#[clap(about, version, author, setting(AppSettings::PropagateVersion))]
+#[clap(about, version, author)]
+#[clap(propagate_version = true)]
 pub struct Arg {
     #[clap(subcommand)]
     pub command: Command,

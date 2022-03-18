@@ -21,7 +21,7 @@ struct Args {
 
 fn main() {
     let gen_args = Args::parse();
-    let mut app = args::Arg::into_app();
+    let mut app = args::Arg::command();
     std::fs::create_dir_all(&gen_args.output).expect("directory can't be created");
     clap_complete::generate_to(gen_args.shell, &mut app, "tmexclude", gen_args.output)
         .expect("completion file can't be generated");
