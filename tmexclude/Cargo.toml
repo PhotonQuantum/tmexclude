@@ -14,7 +14,7 @@ name = "tmexclude_lib"
 path = "./src/lib/lib.rs"
 
 [dependencies]
-actix = "0.12"
+actix = "0.13"
 actix-rt = "2.7"
 actix-signal = { version = "0.1", features = ["derive"] }
 bincode = "1.3"
