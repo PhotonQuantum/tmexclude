@@ -1,8 +1,14 @@
 #![allow(clippy::non_ascii_literal, clippy::module_name_repetitions)]
 
+use std::panic;
+use std::panic::PanicInfo;
+
+use backtrace::Backtrace;
 use clap::Parser;
 use console::Emoji;
 use eyre::Result;
+use log::error;
+use once_cell::sync::OnceCell;
 
 use tmexclude_lib::rpc::Request;
 
@@ -23,6 +29,7 @@ mod scan;
 mod utils;
 
 static EXCLAIMING: Emoji<'_, '_> = Emoji("❗️  ", "");
+static OLD_HOOK: OnceCell<Box<dyn Fn(&PanicInfo<'_>) + 'static + Sync + Send>> = OnceCell::new();
 
 fn main() {
     if let Err(e) = run() {
@@ -31,8 +38,26 @@ fn main() {
     }
 }
 
+fn panic_log(info: &PanicInfo<'_>) {
+    let bt = Backtrace::new();
+    error!("!!! PANIC\n{}\nBacktrace:\n{:#?}", info, bt);
+    if let Some(hook) = OLD_HOOK.get() {
+        hook(info);
+    }
+}
+
+fn register_panic_report() {
+    let last_hook = panic::take_hook();
+    OLD_HOOK
+        .set(last_hook)
+        .ok()
+        .expect("Unable to record old panic hook");
+    panic::set_hook(Box::new(panic_log));
+}
+
 fn run() -> Result<()> {
     template_eyre::Hook::new(include_str!("error.hbs"))?.install()?;
+    register_panic_report();
 
     let args = Arg::parse();
 

@@ -135,8 +135,14 @@ pub mod server {
                         }
                     });
                 },
-                _ = stop_rx.recv() => break,
-                _ = signals.next() => break,
+                _ = stop_rx.recv() => {
+                    info!("Remote stop signal received, shutting down");
+                    break
+                },
+                _ = signals.next() => {
+                    info!("Received terminate signal, shutting down");
+                    break
+                },
                 else => ()
             }
         }
