@@ -1,6 +1,6 @@
 [package]
 name = "tmexclude"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 authors = ["LightQuantum <self@lightquantum.me>"]
 description = "Exclude undesired files (node_modules, target, etc) from your TimeMachine backup."
