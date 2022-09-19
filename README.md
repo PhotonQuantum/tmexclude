@@ -1,4 +1,4 @@
-# tmexclude
+# TimeMachine Exclude (tmexclude)
 
 Exclude undesired files (node_modules, target, etc) from your TimeMachine backup.
 
@@ -16,31 +16,6 @@ Screenshots available [here](#screenshots).
 ```shell
 $ brew install PhotonQuantum/tap/tmexclude
 ```
-
-## Usage
-
-### Enable background daemon (recommended)
-
-```shell
-$ tmexclude agent start
-```
-
-`tmexclude` will start at login and watch for file changes in your home directory.
-
-New files matching a set of rules will be excluded immediately.
-By default, rules include dependency directories like `node_modules/` living adjacent to a `package.json` file.
-
-### Perform a full scan
-
-```shell
-$ tmexclude scan
-```
-
-Home directory will be scanned recursively for files that have missed by the background daemon.
-
-After the scan completes, you have a chance to review the results and decide whether to exclude them or not.
-
-> Refer to `tmexclude help` for more commands and options.
 
 ## Configuration
 
@@ -71,11 +46,11 @@ however.
 
 ## Screenshots
 
-### Daemon mode
-[![daemon](screenshots/daemon.gif)](https://asciinema.org/a/465340)
+> WIP
 
-### Scan mode
-[![scan](screenshots/scan.gif)](https://asciinema.org/a/465339)
+## Acknowledgements
+
+<a href="https://www.flaticon.com/free-icons/harddisk" title="harddisk icons">Harddisk icons created by Smashicons - Flaticon</a>
 
 ## License
 

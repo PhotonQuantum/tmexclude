@@ -1,0 +1,36 @@
+# This is a configuration file for the bacon tool
+# More info at https://github.com/Canop/bacon
+
+default_job = "clippy"
+
+[keybindings]
+k = "scroll-lines(-1)"
+j = "scroll-lines(1)"
+c = "job:clippy"
+t = "job:test"
+f = "job:fix"
+shift-F9 = "toggle-backtrace"
+ctrl-r = "toggle-raw-output"
+ctrl-u = "scroll-page(-1)"
+ctrl-d = "scroll-page(1)"
+
+[jobs]
+
+[jobs.clippy]
+command = ["cargo", "clippy", "--workspace", "--tests", "--color", "always", "--", "-W", "clippy::all", "-W", "clippy::nursery", "-W", "clippy::pedantic"]
+watch = ["src", "tests"]
+need_stdout = false
+
+[jobs.test]
+command = ["cargo", "test", "--color", "always"]
+need_stdout = true
+watch = ["tests"]
+
+[jobs.doc]
+command = ["cargo", "doc", "--color", "always", "--no-deps"]
+need_stdout = false
+
+[jobs.fix]
+command = ["cargo", "clippy", "--fix", "--allow-no-vcs", "--allow-staged", "--allow-dirty", "--workspace", "--tests", "--color", "always", "--", "-W", "clippy::all", "-W", "clippy::nursery", "-W", "clippy::pedantic"]
+need_stdout = false
+on_success = "job:clippy"
