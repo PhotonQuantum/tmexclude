@@ -1,4 +1,9 @@
+/node_modules
 /target
 /.idea
 /dist
 /release
+
+next-env.d.ts
+/.next
+/.vscode

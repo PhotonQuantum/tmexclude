@@ -1,0 +1,62 @@
+[package]
+name = "tmexclude"
+version = "0.2.0"
+description = "A Tauri App"
+authors = ["LightQuantum <self@lightquantum.me>"]
+license = ""
+repository = ""
+edition = "2021"
+rust-version = "1.57"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[[bin]]
+name = "tmexclude"
+path = "src/main.rs"
+
+[lib]
+name = "tmexclude_lib"
+path = "src/lib/lib.rs"
+
+[build-dependencies]
+tauri-build = { version = "1.0.0", features = [] }
+
+[dependencies]
+fsevent-stream = "0.2"
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive", "rc"] }
+tauri = { version = "1.0.0", features = ["macos-private-api", "system-tray", "window-start-dragging"] }
+itertools = "0.10"
+parking_lot = "0.12"
+maplit = "1.0"
+tap = "1.0"
+toml = "0.5"
+log = "0.4"
+thiserror = "1.0"
+ts-rs = { git = "https://github.com/PhotonQuantum/ts-rs" }
+eyre = "0.6"
+xattr = "0.2"
+jwalk = "0.6"
+serde_yaml = "0.9"
+shellexpand = "2.1"
+futures = "0.3"
+moka = "0.9"
+core-foundation = { version = "0.9", features = ["mac_os_10_8_features"] }
+crossbeam = "0.8"
+directories = "4.0"
+arc-swap = "1.5"
+window-vibrancy = "0.1"
+cocoa = "0.24"
+objc = "0.2"
+
+[dev-dependencies]
+assert_cmd = "2.0"
+tempfile = "3.3"
+
+[features]
+# by default Tauri runs in production mode
+# when `tauri dev` runs it is executed with `cargo run --no-default-features` if `devPath` is an URL
+default = ["custom-protocol"]
+# this feature is used used for production builds where `devPath` points to the filesystem
+# DO NOT remove this
+custom-protocol = ["tauri/custom-protocol"]
