@@ -72,7 +72,7 @@ fn main() {
             let main_window = app.get_window("main").unwrap();
             window_vibrancy::apply_vibrancy(&main_window, NSVisualEffectMaterial::Sidebar).expect("unable to apply vibrancy");
             main_window.set_transparent_titlebar();
-            main_window.set_trafficlights_position(18., 18.);
+            main_window.set_trafficlights_position(20., 20.);
             app.set_activation_policy(ActivationPolicy::Accessory);
             Ok(())
         })
