@@ -7,8 +7,6 @@ use cocoa::foundation::{NSPoint, NSRect};
 use objc::msg_send;
 use tauri::{Runtime, Window, WindowEvent};
 
-const DEFAULT_MARGIN: Margin = Margin { x: 20.0, y: 20.0 };
-
 #[derive(Debug, Copy, Clone)]
 pub struct Margin {
     x: CGFloat,
