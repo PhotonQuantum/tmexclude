@@ -1,20 +1,24 @@
 import {Accordion, ActionIcon, Group, Menu, MultiSelect, SegmentedControl, Stack, Text, TextInput} from "@mantine/core";
 import {IconDots, IconPencil, IconTrash} from "@tabler/icons";
-import {useRecoilState, useRecoilValue, useSetRecoilState} from "recoil";
-import {allPathsState, perRuleState, ruleNamesState, rulesState} from "../states";
-import {useState} from "react";
+import {useSetRecoilState} from "recoil";
+import {perRuleState, rulesState} from "../states";
+import React, {useState} from "react";
 import {PreRule} from "../bindings/PreRule";
+import _ from "lodash";
 
 type RuleItemProps = {
-  name: string,
+  name: string, value: PreRule, allPaths: string[], ruleNames: string[],
 }
 
-export const RuleItem = ({name}: RuleItemProps) => {
+export const RuleItem = React.memo(({
+                     name,
+                     value,
+                     allPaths,
+                     ruleNames
+                   }: RuleItemProps) => {
   console.log("rule item rerender", name);
   const setRules = useSetRecoilState(rulesState);
-  const ruleNames = useRecoilValue(ruleNamesState);
-  const [value, setValue] = useRecoilState(perRuleState(name));
-  const allPaths = useRecoilValue(allPathsState);
+  const setValue = useSetRecoilState(perRuleState(name));
   const [renaming, setRenaming] = useState(false);
   const [newName, setNewName] = useState("");
   const [prev, setPrev] = useState<PreRule | null>(null);
@@ -164,4 +168,4 @@ export const RuleItem = ({name}: RuleItemProps) => {
       </Stack>
     </Accordion.Panel>
   </Accordion.Item>)
-}
+}, _.isEqual);

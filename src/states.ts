@@ -143,12 +143,6 @@ export const dirsState = selector<PreDirectory[]>({
   }
 })
 
-export const dirPathsState = equalSelector<string[]>({
-  key: "dirPaths",
-  get: ({get}) => get(dirsState).map(dir => dir.path).sort(),
-  equals: _.isEqual
-});
-
 export const perDirState = equalSelectorFamily<PreDirectory, string>({
   key: "perDir",
   get: (dirPath: string) => ({get}) => {

@@ -2,7 +2,7 @@ import {getMainLayout} from "../../components/mainLayout";
 import {Accordion, Box, Button, Container, Group, Popover, ScrollArea, Stack, Text, TextInput} from "@mantine/core";
 import {IconPlus, IconTemplate} from "@tabler/icons";
 import {useRecoilValue, useSetRecoilState} from "recoil";
-import {ruleNamesState, rulesState} from "../../states";
+import {allPathsState, ruleNamesState, rulesState} from "../../states";
 import {RuleItem} from "../../components/ruleItem";
 import {useState} from "react";
 import {useElementSize} from "@mantine/hooks";
@@ -61,6 +61,8 @@ const AddButton = () => {
 
 const Rules = () => {
   const ruleNames = useRecoilValue(ruleNamesState);
+  const rules = useRecoilValue(rulesState);
+  const allPaths = useRecoilValue(allPathsState);
   console.log("rules rerender", ruleNames);
   return (<Container sx={{height: "100%"}}>
     <Stack py={"xl"} sx={{height: "100%"}}>
@@ -90,7 +92,10 @@ const Rules = () => {
               padding: theme.spacing.sm
             }
           })}
-        >{ruleNames.map((name) => (<RuleItem key={name} name={name}/>))}
+        >{Object.entries(rules)
+          .sort(([n1, _1], [n2, _2]) => n1.localeCompare(n2))
+          .map(([name, value]) => (
+            <RuleItem key={name} name={name} value={value} allPaths={allPaths} ruleNames={ruleNames}/>))}
         </Accordion>
       </ScrollArea>
     </Stack>
