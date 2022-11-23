@@ -3,9 +3,9 @@ import {
   Badge, Box, Button, Container, createStyles, MultiSelect, Popover, ScrollArea, Stack, Table, Text, Tooltip
 } from "@mantine/core";
 import {IconMinus, IconPlus} from "@tabler/icons";
-import {useEffect, useState} from "react";
+import React, {useEffect, useState} from "react";
 import {useRecoilState, useRecoilValue, useSetRecoilState} from "recoil";
-import {dirPathsState, dirsState, perDirState, ruleNamesState, skipsState} from "../../states";
+import {dirsState, perDirState, ruleNamesState, skipsState} from "../../states";
 import {open} from "@tauri-apps/api/dialog";
 import {truncatePath} from "../../utils";
 import _ from "lodash";
@@ -22,9 +22,16 @@ const useStyles = createStyles((theme) => ({
   },
 }));
 
-const WatchedDirItem = ({path}: { path: string }) => {
-  const ruleNames = useRecoilValue(ruleNamesState);
-  const [value, setValue] = useRecoilState(perDirState(path));
+type WatchedDirItemProps = {
+  path: string, rules: string[], ruleNames: string[]
+}
+
+const WatchedDirItem = React.memo(({
+                                     path,
+                                     rules,
+                                     ruleNames
+                                   }: WatchedDirItemProps) => {
+  const setValue = useSetRecoilState(perDirState(path));
   const [[truncated, truncatedPath], setTruncated] = useState<[boolean, string]>([false, path]);
   const setDirs = useSetRecoilState(dirsState);
   useEffect(() => {
@@ -49,7 +56,7 @@ const WatchedDirItem = ({path}: { path: string }) => {
             }}>{truncatedPath}</Text>
           </Tooltip>
         </td>
-        <td>{value.rules.map((rule) => (<Badge key={rule} variant={"light"}>
+        <td>{rules.map((rule) => (<Badge key={rule} variant={"light"}>
           <Text size={9} sx={{cursor: "pointer"}}>{rule}</Text>
         </Badge>))}</td>
       </Box>
@@ -61,7 +68,7 @@ const WatchedDirItem = ({path}: { path: string }) => {
           <MultiSelect
             searchable
             data={ruleNames}
-            value={value.rules}
+            value={rules}
             maxDropdownHeight={150}
             placeholder={"Pick rules to apply"}
             onChange={(rules) => {
@@ -78,11 +85,11 @@ const WatchedDirItem = ({path}: { path: string }) => {
       </>
     </Popover.Dropdown>
   </Popover>)
-}
+}, _.isEqual);
 
 const WatchedDir = () => {
-  const dirPaths = useRecoilValue(dirPathsState);
-  const setDirs = useSetRecoilState(dirsState);
+  const ruleNames = useRecoilValue(ruleNamesState);
+  const [dirs, setDirs] = useRecoilState(dirsState);
   const addDir = async () => {
     const selected = await open({
       directory: true
@@ -104,7 +111,10 @@ const WatchedDir = () => {
     <ScrollArea sx={{height: "40%"}}>
       <Table highlightOnHover>
         <tbody>
-        {dirPaths.map((path) => (<WatchedDirItem path={path}/>))}
+        {dirs.map(({
+                     path,
+                     rules
+                   }) => (<WatchedDirItem path={path} rules={rules} ruleNames={ruleNames}/>))}
         </tbody>
       </Table>
     </ScrollArea>
