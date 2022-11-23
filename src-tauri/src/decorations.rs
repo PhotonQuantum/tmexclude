@@ -21,7 +21,7 @@ pub trait WindowExt {
 impl<R: Runtime> WindowExt for Window<R> {
     fn set_transparent_titlebar(&self) {
         unsafe {
-            let id = self.ns_window().unwrap() as id;
+            let id = self.ns_window().unwrap().cast::<objc::runtime::Object>();
 
             id.setTitleVisibility_(NSWindowTitleVisibility::NSWindowTitleHidden);
             id.setTitlebarAppearsTransparent_(cocoa::base::YES);
@@ -35,7 +35,7 @@ impl<R: Runtime> WindowExt for Window<R> {
             move |ev| {
                 if let WindowEvent::Resized(_) | WindowEvent::Focused(true) = ev {
                     unsafe {
-                        let id = window.ns_window().unwrap() as id;
+                        let id = window.ns_window().unwrap().cast::<objc::runtime::Object>();
                         update_layout(id, margin);
                     };
                 }
@@ -43,7 +43,7 @@ impl<R: Runtime> WindowExt for Window<R> {
         });
 
         unsafe {
-            let id = self.ns_window().unwrap() as id;
+            let id = self.ns_window().unwrap().cast::<objc::runtime::Object>();
 
             update_layout(id, margin);
         }
@@ -61,13 +61,13 @@ unsafe fn update_layout(window: impl NSWindow + Copy, margin: Margin) {
 
     let container = left.superview().superview();
     let mut cbounds = NSView::frame(container);
-    cbounds.size.height = button_height + 2. * margin.y;
+    cbounds.size.height = 2.0f64.mul_add(margin.y, button_height);
     cbounds.origin.y = window.frame().size.height - cbounds.size.height;
     container.setFrame(cbounds);
 
     for (idx, btn) in [left, middle, right].into_iter().enumerate() {
         btn.setFrameOrigin(NSPoint::new(
-            margin.x + (button_width + padding) * idx as CGFloat,
+            (button_width + padding).mul_add(idx as CGFloat, margin.x),
             margin.y,
         ));
     }

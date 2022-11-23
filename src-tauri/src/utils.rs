@@ -1,13 +1,14 @@
 use std::fs;
 use std::path::{Path, PathBuf};
-use directories::BaseDirs;
 
+use directories::BaseDirs;
 use eyre::{eyre, Report, Result, WrapErr};
-use tmexclude_lib::Config;
+
+use tmexclude_lib::PreConfig;
 
 const DEFAULT_CONFIG: &str = include_str!("../../config.example.yaml");
 
-pub fn collect_config(path: Option<PathBuf>) -> Result<Config> {
+pub fn collect_config(path: Option<PathBuf>) -> Result<PreConfig> {
     let path = path
         .map(|p| p.canonicalize().unwrap_or_else(|_| p.clone()))
         .ok_or(())
@@ -31,11 +32,9 @@ pub fn collect_config(path: Option<PathBuf>) -> Result<Config> {
         // .suggestion("please ensure the config file exists on your given path")?;
     Ok(
         if path.extension().unwrap_or_default().eq(Path::new("toml")) {
-            let de = &mut toml::Deserializer::new(body.as_str());
-            Config::from(de)?
+            toml::from_str(body.as_str())?
         } else {
-            let de = serde_yaml::Deserializer::from_str(body.as_str());
-            Config::from(de)?
+            serde_yaml::from_str(body.as_str())?
         },
     )
 }

@@ -1,48 +1,51 @@
-import {createPolymorphicComponent, createStyles, Text as MantineText, TextProps} from "@mantine/core";
-import styled from "@emotion/styled";
-
 export const disableMenu = () => {
-    if (typeof window === "undefined") {
-        return;
-    }
+  if (typeof window === "undefined") {
+    return;
+  }
 
-    // @ts-ignore
-    if (window.__TAURI__.environment !== 'production') {
-        return
-    }
+  // @ts-ignore
+  if (window.__TAURI__.environment !== 'production') {
+    return
+  }
 
-    document.addEventListener('contextmenu', e => {
-        e.preventDefault();
-        return false;
-    }, {capture: true})
+  document.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    return false;
+  }, {capture: true})
 
-    document.addEventListener('selectstart', e => {
-        e.preventDefault();
-        return false;
-    }, {capture: true})
+  document.addEventListener('selectstart', e => {
+    e.preventDefault();
+    return false;
+  }, {capture: true})
 }
 
-export const useStyles = createStyles(() => ({
-    prohibit: {
-        userSelect: 'none',
-        cursor: 'default',
+function _getHomeDirPath() {
+  let result: string | null = null;
+  return async () => {
+    if (result !== null) {
+      return result;
     }
-}));
+    if (typeof window === "undefined") {
+      return "!!!!!!!!!"
+    }
+    const homeDir = await import("@tauri-apps/api/path").then(path => path.homeDir);
+    let dir = await homeDir();
+    // @ts-ignore
+    result = dir;
+    return dir;
+  }
+}
 
-const _Text = styled(MantineText)`
-  // user-select: none;
-  // cursor: default;
-`;
+const getHomeDirPath = _getHomeDirPath();
 
-export const Text = createPolymorphicComponent<'text', TextProps>(_Text);
+export const truncatePath: (path: string) => Promise<[boolean, string]> = async (path: string) => {
+  const homeReplaced = path.replace(await getHomeDirPath(), "~/");
+  let changed = homeReplaced !== path;
+  path = homeReplaced;
 
-export const ScrollBorder = createStyles((theme) => ({
-    root:
-        {
-            maxHeight: "100%",
-            borderStyle: "solid",
-            borderWidth: "1px",
-            borderRadius: theme.radius.xs,
-            borderColor: theme.colorScheme === 'dark' ? theme.colors.dark[4] : theme.colors.gray[2]
-        },
-}));
+  const parts = path.split('/');
+  if (parts.length <= 4) {
+    return [changed, path];
+  }
+  return [true, parts.slice(0, 3).join('/') + '/.../' + parts.slice(-1)];
+}

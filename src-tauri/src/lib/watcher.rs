@@ -44,7 +44,7 @@ pub async fn watch_task(mission: Weak<Mission>) -> io::Result<()> {
             "mission is dropped before watch task is started",
         )
     })?;
-    let config = mission.config();
+    let config = mission.config_();
     let metrics = mission.metrics();
 
     let paths = config

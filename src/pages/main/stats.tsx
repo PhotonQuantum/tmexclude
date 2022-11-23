@@ -1,8 +1,6 @@
-import {getMainLayout} from "../../components/main-layout";
-import {Box, Card, Container, Group, Stack, ThemeIcon} from "@mantine/core";
+import {getMainLayout} from "../../components/mainLayout";
+import {Box, Card, Container, Group, Stack, ThemeIcon, Text, Title} from "@mantine/core";
 import {IconCheck, IconDots, IconFileMinus, IconFilePlus, IconRadar} from "@tabler/icons";
-import {Title} from "../../components/title";
-import {Text} from "../../components/text";
 import useSWR from 'swr'
 import {Metrics} from "../../bindings/Metrics";
 import ReactTimeago from "react-timeago";
@@ -54,7 +52,7 @@ const Stats = () => {
                                 </ThemeIcon>
                                 <Text size={"xl"}>{data?.files_included} Files</Text>
                             </Group>
-                            <Text sx={{userSelect: "none", cursor: "default"}} size={"sm"} color={"dimmed"}>have been
+                            <Text size={"sm"} color={"dimmed"}>have been
                                 re-included into TimeMachine backups</Text>
                         </Box>
                     </Group>
