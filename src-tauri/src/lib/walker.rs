@@ -172,7 +172,7 @@ fn generate_diff<'a, 'b>(
         .iter()
         .filter_map(|(name, excluded)| {
             let expected_excluded = candidate_rules.iter().any(|rule| {
-                (&rule.excludes).contains(name)
+                rule.excludes.contains(name)
                     && (rule.if_exists.is_empty()
                         || rule
                             .if_exists

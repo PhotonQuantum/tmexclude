@@ -25,7 +25,7 @@ tauri-build = { version = "1.0.0", features = [] }
 fsevent-stream = "0.2"
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive", "rc"] }
-tauri = { version = "1.0.0", features = ["macos-private-api", "system-tray", "window-start-dragging"] }
+tauri = { version = "1.0.0", features = ["dialog-open", "macos-private-api", "path-all", "system-tray", "window-start-dragging"] }
 itertools = "0.10"
 parking_lot = "0.12"
 maplit = "1.0"
@@ -33,7 +33,7 @@ tap = "1.0"
 toml = "0.5"
 log = "0.4"
 thiserror = "1.0"
-ts-rs = { git = "https://github.com/PhotonQuantum/ts-rs" }
+ts-rs = "6.2"
 eyre = "0.6"
 xattr = "0.2"
 jwalk = "0.6"
@@ -45,7 +45,7 @@ core-foundation = { version = "0.9", features = ["mac_os_10_8_features"] }
 crossbeam = "0.8"
 directories = "4.0"
 arc-swap = "1.5"
-window-vibrancy = "0.1"
+window-vibrancy = "0.3"
 cocoa = "0.24"
 objc = "0.2"
 

@@ -13,6 +13,12 @@
     "allowlist": {
       "window": {
         "startDragging": true
+      },
+      "dialog": {
+        "open": true
+      },
+      "path": {
+        "all": true
       }
     },
     "systemTray": {

@@ -14,7 +14,7 @@ use std::sync::Arc;
 use itertools::Itertools;
 use log::warn;
 use maplit::hashset;
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize};
 use tap::TapFallible;
 use ts_rs::TS;
 
@@ -29,7 +29,19 @@ pub struct Config {
     pub walk: Arc<WalkConfig>,
 }
 
+impl TryFrom<PreConfig> for Config {
+    type Error = ConfigError;
+
+    fn try_from(value: PreConfig) -> Result<Self, Self::Error> {
+        Ok(Self {
+            no_include: value.no_include,
+            walk: Arc::new(WalkConfig::from(value.directories, &value.rules, value.skips)?),
+        })
+    }
+}
+
 impl Config {
+    // TODO remove this function
     /// Load config from deserializer.
     ///
     /// # Errors
@@ -65,7 +77,7 @@ pub struct Directory {
 }
 
 /// Rules to be applied on a specific set of directories.
-#[derive(Debug, Clone, Deserialize, Eq, PartialEq, Hash, Default, TS)]
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq, Hash, Default, TS)]
 #[ts(export, export_to = "../src/bindings/")]
 #[serde(rename_all = "kebab-case")]
 pub struct Rule {
@@ -248,20 +260,20 @@ impl WalkConfig {
     /// # Errors
     /// `ConfigError` if there's no scanning directory specified in the config.
     pub fn root(&self) -> Result<PathBuf, ConfigError> {
-        get_root(&*self.directories).ok_or(ConfigError::NoDirectory)
+        get_root(&self.directories).ok_or(ConfigError::NoDirectory)
     }
 
     /// Squash nested directory paths.
     #[must_use]
     pub fn paths(&self) -> HashSet<&Path> {
-        get_paths(&*self.directories)
+        get_paths(&self.directories)
     }
 }
 
-#[derive(Deserialize, TS)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export, export_to = "../src/bindings/")]
 #[serde(rename_all = "kebab-case")]
-struct PreConfig {
+pub struct PreConfig {
     #[serde(default)]
     no_include: bool,
     #[serde(default)]
@@ -272,17 +284,17 @@ struct PreConfig {
     rules: HashMap<String, PreRule>,
 }
 
-#[derive(Deserialize, TS)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export, export_to = "../src/bindings/")]
-struct PreDirectory {
+pub struct PreDirectory {
     path: String,
     rules: Vec<String>,
 }
 
-#[derive(Deserialize, TS)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export, export_to = "../src/bindings/")]
 #[serde(untagged)]
-enum PreRule {
+pub enum PreRule {
     Concrete(Rule),
     Union(Vec<String>),
 }

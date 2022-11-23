@@ -8,6 +8,7 @@ import {NextPage} from "next";
 import {AnimatePresence} from "framer-motion";
 import {SWRConfig} from "swr";
 import {disableMenu} from "../utils";
+import {RecoilRoot} from "recoil";
 
 export type NextPageWithLayout<P = {}, IP = P> = NextPage<P, IP> & {
     getLayout?: (page: ReactElement) => ReactNode
@@ -52,6 +53,19 @@ export default function MyApp({Component, pageProps}: AppPropsWithLayout) {
                                     }
                                 }
                             },
+                            Input: {
+                                defaultProps: {
+                                    spellCheck: false
+                                }
+                            },
+                            Title: {
+                                styles: {
+                                    root: {
+                                        userSelect: "none",
+                                        cursor: "default",
+                                    }
+                                }
+                            },
                             ScrollArea: {
                                 styles: (theme) => ({
                                     root:
@@ -74,9 +88,11 @@ export default function MyApp({Component, pageProps}: AppPropsWithLayout) {
                         }
                     }}
                 >
-                    <AnimatePresence mode={"wait"} initial={false}>
-                        {getLayout(<Component {...pageProps} />)}
-                    </AnimatePresence>
+                    <RecoilRoot>
+                        <AnimatePresence mode={"wait"} initial={false}>
+                            {getLayout(<Component {...pageProps} />)}
+                        </AnimatePresence>
+                    </RecoilRoot>
                 </MantineProvider>
             </SWRConfig>
         </>

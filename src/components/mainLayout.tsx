@@ -1,11 +1,12 @@
-import {Box, Container, Group, Header, Navbar, NavLink} from "@mantine/core";
+import {Box, Button, Container, Group, Header, Navbar, NavLink, Text} from "@mantine/core";
 import {Fragment, ReactElement} from "react";
 import {IconAdjustments, IconChartBubble, IconFolders, IconHomeSearch, IconSettings, IconTemplate} from "@tabler/icons";
 import {useRouter} from "next/router";
 import Link from "next/link";
 import {motion} from "framer-motion";
-import {Text} from "./text";
 import {useElementSize, useViewportSize} from "@mantine/hooks";
+import {useRecoilValue, useResetRecoilState, useSetRecoilState} from "recoil";
+import {configChangedState, draftConfigState, finalConfigState} from "../states";
 
 type NavLink = {
     kind: "link",
@@ -60,14 +61,19 @@ export const MainLayout = ({children}: { children: ReactElement }) => {
                 section.kind === "link" ?
                     <Fragment key={`nav-${idx}`}>
                         <Navbar.Section>
-                            <Link key={`link-${section.title}`} href={section.href} passHref>
+                             <Link key={`link-${section.title}`} href={section.href} passHref style={{textDecoration: "none"}}>
                                 <NavLink
-                                    component={"a"}
+                                    component={"div"}
                                     icon={section.icon}
                                     label={section.title}
                                     color={"dark"}
                                     active={router.pathname === section.href}
                                     sx={(theme) => ({borderRadius: theme.radius.sm})}
+                                    styles={{
+                                        label: {
+                                            cursor: "pointer"
+                                        }
+                                    }}
                                     py={3}
                                 />
                             </Link>
@@ -81,24 +87,39 @@ export const MainLayout = ({children}: { children: ReactElement }) => {
                     </Fragment>
             ))}
         </Navbar>;
+    // TODO split header into independent component for better hook performance
+    const changed = useRecoilValue(configChangedState);
+    const resetDraft = useResetRecoilState(draftConfigState);
+    const draftConfig = useRecoilValue(draftConfigState);
+    const setFinalConfig = useSetRecoilState(finalConfigState);
     const header = <Header ref={ref} height={55} p="xs"
                            styles={(theme) => ({
                                root: {
-                                   background: theme.colorScheme === "dark" ? "#38343C" : "#F6F2F9"
+                                   background: theme.colorScheme === "dark" ? "#38343C" : "#F6F2F9",
                                }
                            })}
                            onMouseDown={evDrag}>
         <Group spacing={"xs"} p={5} sx={(theme) => ({
-            color: theme.colorScheme === "dark" ? "#ffffff" : "inherit"
+            color: theme.colorScheme === "dark" ? "#ffffff" : "inherit",
+            alignItems:"flex-start"
         })}>
-            <IconAdjustments size={20} strokeWidth={1.5}/>
+            <Box sx={{height: 20, width: 20}} pt={2}>
+                <IconAdjustments size={20} strokeWidth={1.5}/>
+            </Box>
             <Text size={"md"}>Preference</Text>
+            {changed &&
+                <>
+                    <Box sx={{flexGrow: 1}}/>
+                    <Button variant={"subtle"} compact sx={{boxShadow: "none"}} onClick={() => resetDraft()}>Reset</Button>
+                    <Button compact onClick={() => setFinalConfig(draftConfig)}>Save</Button>
+                </>
+            }
         </Group>
     </Header>;
     return (
         <Box sx={{display: "flex", flexDirection: "row"}} m={"auto"}>
             {navbar}
-            <Box sx={{width: "100%", display: "flex", flexDirection: "column"}}>
+            <Box sx={{width: "100%", display: "flex", flexDirection: "column", overflowX: "hidden"}}>
                 {header}
                 <Container
                     sx={(theme) => ({
