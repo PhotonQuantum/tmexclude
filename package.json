@@ -15,6 +15,7 @@
     "@mantine/hooks": "^5.8.2",
     "@mantine/next": "^5.8.2",
     "@mantine/notifications": "^5.8.2",
+    "@mantine/utils": "^5.8.3",
     "@tabler/icons": "^1.112.0",
     "@tauri-apps/api": "^1.2.0",
     "framer-motion": "^7.6.7",

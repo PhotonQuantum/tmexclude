@@ -9,6 +9,7 @@ import {dirsState, perDirState, ruleNamesState, skipsState} from "../../states";
 import {open} from "@tauri-apps/api/dialog";
 import {truncatePath} from "../../utils";
 import _ from "lodash";
+import {createScopedKeydownHandler} from "@mantine/utils";
 
 const buttonStyles = {
   root: {paddingRight: 7},
@@ -34,6 +35,7 @@ const WatchedDirItem = React.memo(({
   const setValue = useSetRecoilState(perDirState(path));
   const [[truncated, truncatedPath], setTruncated] = useState<[boolean, string]>([false, path]);
   const setDirs = useSetRecoilState(dirsState);
+  const [popOverOpened, setPopOverOpened] = useState(false);
   useEffect(() => {
     truncatePath(path).then((truncated: [boolean, string]) => {
       setTruncated(truncated);
@@ -45,9 +47,23 @@ const WatchedDirItem = React.memo(({
       return dirs.filter((dir) => dir.path !== path);
     });
   }
-  return (<Popover withArrow trapFocus withinPortal shadow={"sm"} width={500}>
+  return (<Popover withArrow trapFocus withinPortal shadow={"sm"} width={500}
+                   opened={popOverOpened} onChange={setPopOverOpened}>
     <Popover.Target>
-      <Box component="tr" key={path} sx={{cursor: "pointer"}}>
+      <Box component="tr" key={path} sx={{cursor: "pointer"}} tabIndex={0}
+           onClick={() => setPopOverOpened(true)}
+        //@ts-ignore
+           onKeyDown={createScopedKeydownHandler({
+             parentSelector: "tbody",
+             siblingSelector: "tr",
+             orientation: "vertical",
+             onKeyDown: (e) => {
+               console.log("tr", e.key);
+               if (e.key === "Enter" || e.key == " ") {
+                 setPopOverOpened(true);
+               }
+             }
+           })}>
         <td>
           <Tooltip label={path} disabled={!truncated}>
             <Text sx={{
@@ -63,7 +79,6 @@ const WatchedDirItem = React.memo(({
     </Popover.Target>
     <Popover.Dropdown>
       <>
-        <Box data-autofocus/>
         <Stack spacing={"xs"}>
           <MultiSelect
             searchable
@@ -153,15 +168,33 @@ const SkippedDirs = () => {
   };
   return (<>
     <Text>Skip the following paths</Text>
-    <ScrollArea sx={{height: "40%"}}>
+    <ScrollArea sx={{height: "40%"}} onKeyDown={(e) => {
+      if (e.key in ["ArrowUp", "ArrowDown", " "]) {
+        e.preventDefault();
+      }
+    }}>
       <Table highlightOnHover m={"auto"}>
         <tbody>
-        {skipped.map((path, idx) => (
-          <tr key={path} onClick={() => setSelected(idx)} className={cx({[classes.rowSelected]: selected === idx})}>
-            <td>
-              <Text>{path}</Text>
-            </td>
-          </tr>))}
+        {skipped.map((path, idx) => (<tr key={path}
+                                         tabIndex={0}
+                                         className={cx({[classes.rowSelected]: selected === idx})}
+          // @ts-ignore
+                                         onKeyDown={createScopedKeydownHandler({
+                                           parentSelector: "tbody",
+                                           siblingSelector: "tr",
+                                           orientation: "vertical",
+                                           onKeyDown: (e) => {
+                                             console.log("tr", e.key);
+                                             if (e.key === "Enter" || e.key == " ") {
+                                               setSelected(idx);
+                                             }
+                                           }
+                                         })}
+                                         onClick={() => setSelected(idx)}>
+          <td>
+            <Text>{path}</Text>
+          </td>
+        </tr>))}
         </tbody>
       </Table>
     </ScrollArea>
@@ -170,7 +203,10 @@ const SkippedDirs = () => {
               onClick={addDir}/>
       <Button size={"xs"} compact leftIcon={<IconMinus size={12}/>} styles={buttonStyles} variant={"default"}
               disabled={!mayRemove}
-              onClick={() => removeDir(selected)}/>
+              onClick={() => {
+                removeDir(selected);
+                setSelected(-1);
+              }}/>
     </Button.Group>
   </>)
 }
