@@ -8,6 +8,7 @@ specifiers:
   '@mantine/hooks': ^5.8.2
   '@mantine/next': ^5.8.2
   '@mantine/notifications': ^5.8.2
+  '@mantine/utils': ^5.8.3
   '@tabler/icons': ^1.112.0
   '@tauri-apps/api': ^1.2.0
   '@tauri-apps/cli': ^1.2.0
@@ -36,6 +37,7 @@ dependencies:
   '@mantine/hooks': 5.8.2_react@18.2.0
   '@mantine/next': 5.8.2_grgosj3z6asacpql7meoxz2gwi
   '@mantine/notifications': 5.8.2_mg4am4smyspjkl6dnttcswxx6a
+  '@mantine/utils': 5.8.3_react@18.2.0
   '@tabler/icons': 1.112.0_biqbaboplfbrettd7655fr4n2y
   '@tauri-apps/api': 1.2.0
   framer-motion: 7.6.7_biqbaboplfbrettd7655fr4n2y
@@ -604,6 +606,14 @@ packages:
 
   /@mantine/utils/5.8.2_react@18.2.0:
     resolution: {integrity: sha512-ZTxZeTyRO2l9dQ7pYsaV3AC7Cjz1HAPi1Ukd9GtiVYq74UuA3iBMLbPV4obxcHAqgUqgIHAP2ulCKHN3DPhaDQ==}
+    peerDependencies:
+      react: '>=16.8.0'
+    dependencies:
+      react: 18.2.0
+    dev: false
+
+  /@mantine/utils/5.8.3_react@18.2.0:
+    resolution: {integrity: sha512-MprJbMh/z3TbC8yPF2PQftitRwl58w7hvhp7O9fT+9jrvJHKM8V7r15iHMwBw2jgX6zmlksstO7QfhENc0vMHQ==}
     peerDependencies:
       react: '>=16.8.0'
     dependencies:
