@@ -6,12 +6,12 @@ use parking_lot::Mutex;
 use tauri::async_runtime::{JoinHandle};
 use tauri::{AppHandle, Manager};
 
-use crate::{watch_task, Metrics};
-use crate::config::{Config, PreConfig};
+use crate::config::{Config, ConfigManager, PreConfig};
 use crate::error::ConfigError;
 
 pub struct Mission {
     app: AppHandle,
+    config_manager: ConfigManager,
     pre_config: ArcSwap<PreConfig>,
     config: ArcSwap<Config>,
     watcher_handle: Mutex<JoinHandle<io::Result<()>>>,
@@ -22,13 +22,18 @@ impl Mission {
     /// Create a new mission.
     ///
     /// This function will start a watcher task.
-    pub fn new_arc(app: AppHandle, pre_config: PreConfig) -> Result<Arc<Self>, ConfigError> {
+    pub fn new_arc(
+        app: AppHandle,
+        config_manager: ConfigManager,
+    ) -> Result<Arc<Self>, ConfigError> {
+        let pre_config = config_manager.load()?;
         let config = Config::try_from(pre_config.clone())?;
         Ok(Arc::new_cyclic(move |this| {
             let task = watch_task(this.clone());
             let handle = tauri::async_runtime::spawn(task);
             Self {
                 app,
+                config_manager,
                 pre_config: ArcSwap::from_pointee(pre_config),
                 config: ArcSwap::from_pointee(config),
                 watcher_handle: Mutex::new(handle),
@@ -52,6 +57,7 @@ impl Mission {
     ///
     /// This method will restart watcher task.
     pub fn set_config(self: Arc<Self>, config: PreConfig) -> Result<(), ConfigError> {
+        self.config_manager.save(&config)?;
         let config_ = Config::try_from(config.clone())?;
         self.pre_config.store(Arc::new(config));
         self.config.store(Arc::new(config_));

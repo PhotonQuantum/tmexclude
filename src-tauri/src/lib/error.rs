@@ -26,4 +26,22 @@ pub enum ConfigError {
     /// Missing rule.
     #[error("Loop found in rules. Rendezvous point: {0}")]
     Loop(String),
+    #[error("Error when reading/writing config file")]
+    Load(#[from] ConfigIOError),
+}
+
+#[derive(Debug, Error)]
+pub enum ConfigIOError {
+    #[error("Home directory not found")]
+    MissingHome,
+    #[error("Failed to create config directory")]
+    CreateConfigDir(#[source] std::io::Error),
+    #[error("Failed to read config")]
+    ReadConfig(#[source] std::io::Error),
+    #[error("Failed to write config")]
+    WriteConfig(#[source] std::io::Error),
+    #[error("Error when deserializing config file")]
+    Deserialize(#[source] Box<dyn Error + Send + Sync>),
+    #[error("Error when serializing config file")]
+    Serialize(#[source] Box<dyn Error + Send + Sync>),
 }
