@@ -5,12 +5,12 @@ use std::collections::{HashMap, HashSet};
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 use std::io::ErrorKind;
-use std::iter;
-use std::ops::{ControlFlow};
+use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::{fs, iter};
 
-
+use directories::BaseDirs;
 use itertools::Itertools;
 use log::warn;
 use maplit::hashset;
@@ -18,7 +18,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 use tap::TapFallible;
 use ts_rs::TS;
 
-use crate::error::ConfigError;
+use crate::error::{ConfigError, ConfigIOError};
 
 /// Main config type used throughout the application.
 #[derive(Debug, Clone)]
@@ -35,7 +35,11 @@ impl TryFrom<PreConfig> for Config {
     fn try_from(value: PreConfig) -> Result<Self, Self::Error> {
         Ok(Self {
             no_include: value.no_include,
-            walk: Arc::new(WalkConfig::from(value.directories, &value.rules, value.skips)?),
+            walk: Arc::new(WalkConfig::from(
+                value.directories,
+                &value.rules,
+                value.skips,
+            )?),
         })
     }
 }
@@ -52,10 +56,13 @@ impl Config {
         let pre_config = PreConfig::from(deserializer)?;
         Ok(Self {
             no_include: pre_config.no_include,
-            walk: Arc::new(WalkConfig::from(pre_config.directories, &pre_config.rules, pre_config.skips)?),
+            walk: Arc::new(WalkConfig::from(
+                pre_config.directories,
+                &pre_config.rules,
+                pre_config.skips,
+            )?),
         })
     }
-
 }
 
 /// Configs related to walking, including interested directories and corresponding rules.
@@ -317,10 +324,43 @@ impl Display for AdhocError {
 
 impl Error for AdhocError {}
 
+const DEFAULT_CONFIG: &str = include_str!("../../../config.example.yaml");
+
+#[derive(Debug, Clone)]
+pub struct ConfigManager {
+    path: PathBuf,
+}
+
+impl ConfigManager {
+    pub fn new() -> Result<Self, ConfigIOError> {
+        let config_dir = BaseDirs::new()
+            .ok_or_else(|| ConfigIOError::MissingHome)?
+            .home_dir()
+            .join(".config");
+        fs::create_dir_all(&config_dir).map_err(ConfigIOError::CreateConfigDir)?;
+
+        let path = config_dir.join("tmexclude.yaml");
+        if !path.exists() {
+            fs::write(&path, DEFAULT_CONFIG).map_err(ConfigIOError::WriteConfig)?;
+        }
+
+        Ok(Self { path })
+    }
+    pub fn load(&self) -> Result<PreConfig, ConfigIOError> {
+        let content = fs::read_to_string(&self.path).map_err(ConfigIOError::ReadConfig)?;
+        serde_yaml::from_str(&content).map_err(|e| ConfigIOError::Deserialize(Box::new(e)))
+    }
+    pub fn save(&self, config: &PreConfig) -> Result<(), ConfigIOError> {
+        let content =
+            serde_yaml::to_string(config).map_err(|e| ConfigIOError::Serialize(Box::new(e)))?;
+        fs::write(&self.path, content).map_err(ConfigIOError::WriteConfig)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use std::collections::HashSet;
-    use std::io::{ErrorKind};
+    use std::io::ErrorKind;
     use std::path::{Path, PathBuf};
     use std::str::FromStr;
     use std::sync::{Arc, Mutex};

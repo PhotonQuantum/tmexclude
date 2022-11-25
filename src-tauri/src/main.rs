@@ -6,6 +6,7 @@
 
 #[macro_use]
 extern crate objc;
+
 use std::sync::Arc;
 
 use tauri::{
@@ -14,11 +15,10 @@ use tauri::{
 };
 use window_vibrancy::NSVisualEffectMaterial;
 
-use crate::decorations::WindowExt;
-use tmexclude_lib::{ConfigError, Metrics, Mission, PreConfig};
+use tmexclude_lib::{ConfigManager, Metrics, Mission, PreConfig};
 
+use crate::decorations::WindowExt;
 use crate::plugins::{BackgroundPlugin, EnvironmentPlugin};
-use crate::utils::collect_config;
 
 mod decorations;
 mod plugins;
@@ -56,7 +56,8 @@ fn system_tray() -> SystemTray {
 fn main() {
     let context = tauri::generate_context!();
 
-    let config = collect_config(None).unwrap();
+    let config_manager = ConfigManager::new().unwrap();
+    let config = config_manager.load().unwrap();
     tauri::Builder::default()
         .system_tray(system_tray())
         .on_system_tray_event(|app, ev| {
@@ -84,7 +85,9 @@ fn main() {
         .invoke_handler(tauri::generate_handler![metrics, get_config, set_config])
         .setup(move |app| {
             // TODO circular dependency?
-            app.manage(Mission::new_arc(app.handle(), config).expect("failed to create mission"));
+            app.manage(
+                Mission::new_arc(app.handle(), config_manager).expect("failed to create mission"),
+            );
             let main_window = app.get_window("main").unwrap();
             window_vibrancy::apply_vibrancy(
                 &main_window,
