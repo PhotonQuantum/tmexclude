@@ -1,21 +1,17 @@
 //! Filesystem watcher.
 
 use std::io;
-
-use std::sync::{Weak};
+use std::sync::Weak;
 use std::time::Duration;
 
-
-use crate::skip_cache::SkipCache;
-use crate::walker::walk_non_recursive;
 use fsevent_stream::ffi::{kFSEventStreamCreateFlagIgnoreSelf, kFSEventStreamEventIdSinceNow};
 use fsevent_stream::stream::{create_event_stream, EventStreamHandler};
 use futures::StreamExt;
 use log::{debug, error};
 
-use futures::StreamExt;
-use log::debug;
 use crate::mission::Mission;
+use crate::skip_cache::SkipCache;
+use crate::walker::walk_non_recursive;
 
 const EVENT_DELAY: Duration = Duration::from_secs(30);
 

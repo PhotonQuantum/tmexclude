@@ -3,14 +3,17 @@
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
-use crossbeam::queue::SegQueue;
 
+use crossbeam::queue::SegQueue;
+use futures::StreamExt;
 use itertools::Itertools;
 use jwalk::WalkDirGeneric;
 use log::{debug, warn};
 use moka::sync::Cache;
 use tap::TapFallible;
+use tauri::async_runtime::Sender;
 
 use crate::config::{Directory, Rule, WalkConfig};
 use crate::skip_cache::CachedPath;
@@ -18,69 +21,94 @@ use crate::tmutil::{is_excluded, ExclusionAction, ExclusionActionBatch};
 
 /// Walk through a directory with given rules recursively and return an exclusion action plan.
 #[must_use]
-pub fn walk_recursive(root: &Path, config: WalkConfig) -> ExclusionActionBatch {
+pub fn walk_recursive(
+    config: WalkConfig,
+    curr_tx: Sender<PathBuf>,
+    abort: Arc<AtomicBool>,
+) -> ExclusionActionBatch {
     let batch_queue = Arc::new(SegQueue::new());
     {
         let batch_queue = batch_queue.clone();
+        let Ok(root) = config.root() else { return ExclusionActionBatch::default() };
+        let counter = AtomicUsize::new(0);
         WalkDirGeneric::<(_, ())>::new(root)
             .root_read_dir_state(config)
             .skip_hidden(false)
-            .process_read_dir(move |_, path, config, children| {
-                // Remove effect-less directories & skips.
-                config.directories.retain(|directory| {
-                    path.starts_with(&directory.path) || directory.path.starts_with(path)
-                });
-                config.skips.retain(|skip| skip.starts_with(path));
+            .process_read_dir({
+                let abort = abort.clone();
+                move |_, path, config, children| {
+                    // Remove effect-less directories & skips.
+                    config.directories.retain(|directory| {
+                        path.starts_with(&directory.path) || directory.path.starts_with(path)
+                    });
+                    config.skips.retain(|skip| skip.starts_with(path));
 
-                if config.directories.is_empty() {
-                    // There's no need to go deeper.
-                    for child in children.iter_mut().filter_map(|child| child.as_mut().ok()) {
-                        child.read_children_path = None;
-                    }
-                    return;
-                }
-
-                // Acquire excluded state.
-                let children = children
-                    .iter_mut()
-                    .filter_map(|entry| {
-                        entry
-                            .as_mut()
-                            .tap_err(|e| warn!("Error when scanning dir {:?}: {}", path, e))
-                            .ok()
-                    })
-                    .filter_map(|entry| {
-                        let path = entry.path();
-                        if config.skips.contains(&path) {
-                            // Skip this entry in all preceding procedures and scans.
-                            entry.read_children_path = None;
-                            None
-                        } else {
-                            Some((entry, is_excluded(&path).ok()?))
+                    if config.directories.is_empty() || abort.load(Ordering::Relaxed) {
+                        // There's no need to go deeper.
+                        for child in children.iter_mut().filter_map(|child| child.as_mut().ok()) {
+                            child.read_children_path = None;
                         }
-                    })
-                    .collect_vec();
-
-                // Generate diff.
-                let shallow_list: HashMap<_, _> = children
-                    .iter()
-                    .map(|(path, excluded)| {
-                        (PathBuf::from(path.file_name().to_os_string()), *excluded)
-                    })
-                    .collect();
-                let diff = generate_diff(path, &shallow_list, &*config.directories);
-
-                // Exclude already excluded or uncovered children.
-                for (entry, excluded) in children {
-                    let path = entry.path();
-                    if (excluded && !diff.remove.contains(&path)) || diff.add.contains(&path) {
-                        entry.read_children_path = None;
+                        return;
                     }
+
+                    if counter
+                        .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |i| {
+                            Some(if i > 1000 { 0 } else { i + 1 })
+                        })
+                        .expect("f never returns None")
+                        == 0
+                    {
+                        if let Err(e) = curr_tx.try_send(path.to_path_buf()) {
+                            warn!("Failed to send current path: {}", e);
+                        }
+                    }
+
+                    // Acquire excluded state.
+                    let children = children
+                        .iter_mut()
+                        .filter_map(|entry| {
+                            entry
+                                .as_mut()
+                                .tap_err(|e| warn!("Error when scanning dir {:?}: {}", path, e))
+                                .ok()
+                        })
+                        .filter_map(|entry| {
+                            let path = entry.path();
+                            if config.skips.contains(&path) {
+                                // Skip this entry in all preceding procedures and scans.
+                                entry.read_children_path = None;
+                                None
+                            } else {
+                                Some((entry, is_excluded(&path).ok()?))
+                            }
+                        })
+                        .collect_vec();
+
+                    // Generate diff.
+                    let shallow_list: HashMap<_, _> = children
+                        .iter()
+                        .map(|(path, excluded)| {
+                            (PathBuf::from(path.file_name().to_os_string()), *excluded)
+                        })
+                        .collect();
+                    let diff = generate_diff(path, &shallow_list, &*config.directories);
+
+                    // Exclude already excluded or uncovered children.
+                    for (entry, excluded) in children {
+                        let path = entry.path();
+                        if (excluded && !diff.remove.contains(&path)) || diff.add.contains(&path) {
+                            entry.read_children_path = None;
+                        }
+                    }
+                    batch_queue.push(diff);
                 }
-                batch_queue.push(diff);
             })
             .into_iter()
             .for_each(|_| {});
+    }
+    if abort.load(Ordering::Relaxed) {
+        // Aborted, the return value is irrelevant.
+        return ExclusionActionBatch::default();
     }
     let mut actions = ExclusionActionBatch::default();
     while let Some(action) = batch_queue.pop() {
