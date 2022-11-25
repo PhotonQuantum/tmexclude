@@ -36,7 +36,7 @@ const Stats = () => {
                 <ThemeIcon size={16} variant={"outline"} radius={"xl"} color={"green"}>
                   <IconCheck size={12} strokeWidth={3}/>
                 </ThemeIcon>
-                <Text size={"xl"}>{data?.files_excluded} Files</Text>
+                <Text size={"xl"}>{data?.["files-excluded"]} Files</Text>
               </Group>
               <Text size={"sm"} color={"dimmed"}>have been excluded from TimeMachine backups</Text>
             </Box>
@@ -57,7 +57,7 @@ const Stats = () => {
                 <ThemeIcon size={16} variant={"outline"} radius={"xl"} color={"green"}>
                   <IconCheck size={12} strokeWidth={3}/>
                 </ThemeIcon>
-                <Text size={"xl"}>{data?.files_included} Files</Text>
+                <Text size={"xl"}>{data?.["files-included"]} Files</Text>
               </Group>
               <Text size={"sm"} color={"dimmed"}>have been
                 re-included into TimeMachine backups</Text>
@@ -80,10 +80,10 @@ const Stats = () => {
                   <IconDots size={12} strokeWidth={3}/>
                 </ThemeIcon>
                 <Text
-                  size={"xl"}>{data?.last_excluded ? data.last_excluded : "N/A"}</Text>
+                    size={"xl"}>{data?.["last-excluded"] ? data?.["last-excluded"] : "N/A"}</Text>
               </Group>
-              <Text size={"sm"} color={"dimmed"}>{(data && data.last_excluded_time !== 0) ? <p>
-                was excluded <ReactTimeago date={data.last_excluded_time * 1000}/>
+              <Text size={"sm"} color={"dimmed"}>{(data && data["last-excluded-time"] !== 0) ? <p>
+                was excluded <ReactTimeago date={data["last-excluded-time"] * 1000}/>
               </p> : "no files have been excluded yet"}</Text>
             </Box>
           </Group>

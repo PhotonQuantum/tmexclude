@@ -9,6 +9,7 @@ use ts_rs::TS;
 
 #[derive(Serialize, TS)]
 #[ts(export, export_to = "../src/bindings/")]
+#[serde(rename_all = "kebab-case")]
 pub struct Metrics {
     #[ts(type = "number")]
     #[serde(serialize_with = "serialize_atomic_usize")]
