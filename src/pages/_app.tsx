@@ -28,70 +28,70 @@ export default function MyApp({
   disableMenu();
 
   return (<>
-      <Head>
-        <title>tmexclude</title>
-        <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width"/>
-      </Head>
+    <Head>
+      <title>tmexclude</title>
+      <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width"/>
+    </Head>
 
-      <SWRConfig
-        value={{
-          refreshInterval: 5000,
-          refreshWhenOffline: true,
-          revalidateOnReconnect: false
+    <SWRConfig
+      value={{
+        refreshInterval: 5000,
+        refreshWhenOffline: true,
+        revalidateOnReconnect: false
+      }}
+    >
+      <MantineProvider
+        withGlobalStyles
+        withNormalizeCSS
+        theme={{
+          colorScheme: preferredColorScheme,
+          components: {
+            Text: {
+              styles: {
+                root: {
+                  userSelect: "none",
+                  cursor: "default",
+                }
+              }
+            },
+            Input: {
+              defaultProps: {
+                spellCheck: false
+              }
+            },
+            Title: {
+              styles: {
+                root: {
+                  userSelect: "none",
+                  cursor: "default",
+                }
+              }
+            },
+            ScrollArea: {
+              styles: (theme) => ({
+                root: {
+                  maxHeight: "100%",
+                  borderStyle: "solid",
+                  borderWidth: "1px",
+                  borderRadius: theme.radius.xs,
+                  borderColor: theme.colorScheme === 'dark' ? theme.colors.dark[4] : theme.colors.gray[2]
+                },
+              })
+            },
+            Button: {
+              styles: (theme) => ({
+                root: {
+                  boxShadow: theme.shadows.xs,
+                }
+              })
+            }
+          }
         }}
       >
-        <MantineProvider
-          withGlobalStyles
-          withNormalizeCSS
-          theme={{
-            colorScheme: preferredColorScheme,
-            components: {
-              Text: {
-                styles: {
-                  root: {
-                    userSelect: "none",
-                    cursor: "default",
-                  }
-                }
-              },
-              Input: {
-                defaultProps: {
-                  spellCheck: false
-                }
-              },
-              Title: {
-                styles: {
-                  root: {
-                    userSelect: "none",
-                    cursor: "default",
-                  }
-                }
-              },
-              ScrollArea: {
-                styles: (theme) => ({
-                  root: {
-                    maxHeight: "100%",
-                    borderStyle: "solid",
-                    borderWidth: "1px",
-                    borderRadius: theme.radius.xs,
-                    borderColor: theme.colorScheme === 'dark' ? theme.colors.dark[4] : theme.colors.gray[2]
-                  },
-                })
-              },
-              Button: {
-                styles: (theme) => ({
-                  root: {
-                    boxShadow: theme.shadows.xs,
-                  }
-                })
-              }
-            }
-          }}
-        >
-          <RecoilRoot>
-            {getLayout(<Component {...pageProps} />)}
-          </RecoilRoot>
-        </MantineProvider>
-      </SWRConfig>
-    </>)
+        <RecoilRoot>
+          {getLayout(<Component {...pageProps} />)}
+        </RecoilRoot>
+      </MantineProvider>
+    </SWRConfig>
+  </>)
 }

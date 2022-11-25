@@ -1,7 +1,7 @@
 //! Background plugin.
 
-use tauri::{AppHandle, RunEvent, Window, WindowEvent, Wry};
 use tauri::plugin::Plugin;
+use tauri::{AppHandle, RunEvent, Window, WindowEvent, Wry};
 
 pub struct EnvironmentPlugin;
 

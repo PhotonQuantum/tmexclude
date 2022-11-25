@@ -57,7 +57,6 @@ fn main() {
     let context = tauri::generate_context!();
 
     let config_manager = ConfigManager::new().unwrap();
-    let config = config_manager.load().unwrap();
     tauri::Builder::default()
         .system_tray(system_tray())
         .on_system_tray_event(|app, ev| {

@@ -29,34 +29,34 @@ const AddButton = () => {
     }
     return false;
   };
-  return (
-    <Popover withArrow trapFocus shadow={"sm"} opened={addPop} onChange={setAddPop} position={"bottom-end"} arrowOffset={width / 2}>
-      <Popover.Target>
-        <Button ref={ref} variant={"default"} size={"xs"} leftIcon={<IconPlus size={16}/>}
-                onClick={() => setAddPop(true)}>
-          Add Rule
-        </Button>
-      </Popover.Target>
-      <Popover.Dropdown mr={"md"}>
-        <TextInput size={"xs"} placeholder={"Rule name"} value={name} error={!validateName(name) && name !== ""}
-                   onChange={(ev) => {
-                     setName(ev.currentTarget.value);
-                   }}
-                   onKeyDown={(ev) => {
-                     if (ev.key === "Enter") {
-                       if (confirmName()) {
-                         setAddPop(false);
-                         setName("");
-                         ev.preventDefault();
-                       }
-                     } else if (ev.key === "Escape") {
+  return (<Popover withArrow trapFocus shadow={"sm"} opened={addPop} onChange={setAddPop} position={"bottom-end"}
+                   arrowOffset={width / 2}>
+    <Popover.Target>
+      <Button ref={ref} variant={"default"} size={"xs"} leftIcon={<IconPlus size={16}/>}
+              onClick={() => setAddPop(true)}>
+        Add Rule
+      </Button>
+    </Popover.Target>
+    <Popover.Dropdown mr={"md"}>
+      <TextInput size={"xs"} placeholder={"Rule name"} value={name} error={!validateName(name) && name !== ""}
+                 onChange={(ev) => {
+                   setName(ev.currentTarget.value);
+                 }}
+                 onKeyDown={(ev) => {
+                   if (ev.key === "Enter") {
+                     if (confirmName()) {
                        setAddPop(false);
+                       setName("");
                        ev.preventDefault();
                      }
-                   }}
-        />
-      </Popover.Dropdown>
-    </Popover>)
+                   } else if (ev.key === "Escape") {
+                     setAddPop(false);
+                     ev.preventDefault();
+                   }
+                 }}
+      />
+    </Popover.Dropdown>
+  </Popover>)
 }
 
 const Rules = () => {

@@ -14,7 +14,7 @@ use directories::BaseDirs;
 use itertools::Itertools;
 use log::warn;
 use maplit::hashset;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 use tap::TapFallible;
 use ts_rs::TS;
 
@@ -39,27 +39,6 @@ impl TryFrom<PreConfig> for Config {
                 value.directories,
                 &value.rules,
                 value.skips,
-            )?),
-        })
-    }
-}
-
-impl Config {
-    // TODO remove this function
-    /// Load config from deserializer.
-    ///
-    /// # Errors
-    /// `Deserializer` if error occurs when deserializing config.
-    /// `Rule` if rule name is referenced but not defined.
-    /// `NotADirectory` if there's directory given but not found.
-    pub fn from<'de>(deserializer: impl Deserializer<'de>) -> Result<Self, ConfigError> {
-        let pre_config = PreConfig::from(deserializer)?;
-        Ok(Self {
-            no_include: pre_config.no_include,
-            walk: Arc::new(WalkConfig::from(
-                pre_config.directories,
-                &pre_config.rules,
-                pre_config.skips,
             )?),
         })
     }
@@ -306,13 +285,6 @@ pub enum PreRule {
     Union(Vec<String>),
 }
 
-impl PreConfig {
-    fn from<'de>(deserializer: impl Deserializer<'de>) -> Result<Self, ConfigError> {
-        Self::deserialize(deserializer)
-            .map_err(|e| ConfigError::Deserialize(Box::new(AdhocError(e.to_string()))))
-    }
-}
-
 #[derive(Debug)]
 struct AdhocError(String);
 
@@ -326,15 +298,21 @@ impl Error for AdhocError {}
 
 const DEFAULT_CONFIG: &str = include_str!("../../../config.example.yaml");
 
+/// Config manager handles config file loading and saving.
 #[derive(Debug, Clone)]
 pub struct ConfigManager {
     path: PathBuf,
 }
 
 impl ConfigManager {
+    /// Create a new config manager.
+    ///
+    /// # Errors
+    /// Returns error if the config file can't be created (if it doesn't exist), can't be read,
+    /// or can't be parsed.
     pub fn new() -> Result<Self, ConfigIOError> {
         let config_dir = BaseDirs::new()
-            .ok_or_else(|| ConfigIOError::MissingHome)?
+            .ok_or(ConfigIOError::MissingHome)?
             .home_dir()
             .join(".config");
         fs::create_dir_all(&config_dir).map_err(ConfigIOError::CreateConfigDir)?;
@@ -346,10 +324,18 @@ impl ConfigManager {
 
         Ok(Self { path })
     }
+    /// Load config from file.
+    ///
+    /// # Errors
+    /// Returns error if the config file can't be read or can't be parsed.
     pub fn load(&self) -> Result<PreConfig, ConfigIOError> {
         let content = fs::read_to_string(&self.path).map_err(ConfigIOError::ReadConfig)?;
         serde_yaml::from_str(&content).map_err(|e| ConfigIOError::Deserialize(Box::new(e)))
     }
+    /// Save config to file.
+    ///
+    /// # Errors
+    /// Returns error if the config file can't be written.
     pub fn save(&self, config: &PreConfig) -> Result<(), ConfigIOError> {
         let content =
             serde_yaml::to_string(config).map_err(|e| ConfigIOError::Serialize(Box::new(e)))?;
@@ -368,9 +354,11 @@ mod test {
 
     use itertools::Itertools;
     use maplit::hashset;
+    use serde::{Deserialize, Deserializer};
 
-    use crate::config::{get_paths, get_root, Config, Directory, Rule, WalkConfig};
+    use crate::config::{get_paths, get_root, AdhocError, Config, Directory, Rule, WalkConfig};
     use crate::error::ConfigError;
+    use crate::PreConfig;
 
     macro_rules! path {
         ($s: expr) => {
@@ -402,10 +390,23 @@ mod test {
         }
     }
 
+    pub fn config_from<'de>(deserializer: impl Deserializer<'de>) -> Result<Config, ConfigError> {
+        let pre_config = PreConfig::deserialize(deserializer)
+            .map_err(|e| ConfigError::Deserialize(Box::new(AdhocError(e.to_string()))))?;
+        Ok(Config {
+            no_include: pre_config.no_include,
+            walk: Arc::new(WalkConfig::from(
+                pre_config.directories,
+                &pre_config.rules,
+                pre_config.skips,
+            )?),
+        })
+    }
+
     #[test]
     fn must_parse_simple() {
         with_directory(|| {
-            let config = Config::from(serde_yaml::Deserializer::from_str(include_str!(
+            let config = config_from(serde_yaml::Deserializer::from_str(include_str!(
                 "../../tests/configs/simple.yaml"
             )))
             .expect("must parse config");
@@ -446,7 +447,7 @@ mod test {
     #[test]
     fn must_test_inherit_rule() {
         with_directory(|| {
-            let config = Config::from(serde_yaml::Deserializer::from_str(include_str!(
+            let config = config_from(serde_yaml::Deserializer::from_str(include_str!(
                 "../../tests/configs/inherit_rule.yaml"
             )))
             .expect("must parse config");
@@ -476,7 +477,7 @@ mod test {
 
     #[test]
     fn must_fail_inherit_rule_loop() {
-        let error = Config::from(serde_yaml::Deserializer::from_str(include_str!(
+        let error = config_from(serde_yaml::Deserializer::from_str(include_str!(
             "../../tests/configs/inherit_rule_loop.yaml"
         )))
         .expect_err("must fail");
@@ -489,7 +490,7 @@ mod test {
 
     #[test]
     fn must_fail_broken_rule() {
-        let error = Config::from(serde_yaml::Deserializer::from_str(include_str!(
+        let error = config_from(serde_yaml::Deserializer::from_str(include_str!(
             "../../tests/configs/broken_rule.yaml"
         )))
         .expect_err("must fail");
@@ -503,7 +504,7 @@ mod test {
     #[test]
     fn must_fail_broken_dir() {
         with_directory(|| {
-            let error = Config::from(serde_yaml::Deserializer::from_str(include_str!(
+            let error = config_from(serde_yaml::Deserializer::from_str(include_str!(
                 "../../tests/configs/broken_dir.yaml"
             )))
             .expect_err("must fail");
@@ -521,7 +522,7 @@ mod test {
     #[test]
     fn must_fail_missing_dir() {
         with_directory(|| {
-            let error = Config::from(serde_yaml::Deserializer::from_str(include_str!(
+            let error = config_from(serde_yaml::Deserializer::from_str(include_str!(
                 "../../tests/configs/missing_dir.yaml"
             )))
             .expect_err("must fail");
@@ -539,7 +540,7 @@ mod test {
     #[test]
     fn must_allow_missing_skip_dir() {
         with_directory(|| {
-            let config = Config::from(serde_yaml::Deserializer::from_str(include_str!(
+            let config = config_from(serde_yaml::Deserializer::from_str(include_str!(
                 "../../tests/configs/allow_missing_skip_dir.yaml"
             )))
             .expect("must parse config");
@@ -583,7 +584,7 @@ mod test {
     #[test]
     fn must_canonicalize_rule_follow_skip() {
         with_directory(|| {
-            let config = Config::from(serde_yaml::Deserializer::from_str(include_str!(
+            let config = config_from(serde_yaml::Deserializer::from_str(include_str!(
                 "../../tests/configs/follow_symlink.yaml"
             )))
             .expect("must parse config");

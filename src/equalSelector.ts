@@ -10,7 +10,8 @@ import {
   SerializableParam
 } from "recoil";
 
-interface EqualSelectorOptions<T> extends Pick<ReadOnlySelectorOptions<T>, "key" | "get">, Partial<Pick<ReadWriteSelectorOptions<T>, "set">> {
+interface EqualSelectorOptions<T> extends Pick<ReadOnlySelectorOptions<T>, "key" | "get">,
+  Partial<Pick<ReadWriteSelectorOptions<T>, "set">> {
   equals: (a: T, b: T) => boolean;
 }
 
@@ -36,11 +37,13 @@ export function equalSelector<T>(options: EqualSelectorOptions<T>): RecoilState<
   });
 }
 
-interface ReadWriteEqualSelectorFamilyOptions<T, P extends SerializableParam> extends Pick<ReadWriteSelectorFamilyOptions<T, P>, "key" | "get" | "set"> {
+interface ReadWriteEqualSelectorFamilyOptions<T, P extends SerializableParam>
+  extends Pick<ReadWriteSelectorFamilyOptions<T, P>, "key" | "get" | "set"> {
   equals: (a: T, b: T) => boolean;
 }
 
-interface ReadOnlyEqualSelectorFamilyOptions<T, P extends SerializableParam> extends Pick<ReadOnlySelectorFamilyOptions<T, P>, "key" | "get"> {
+interface ReadOnlyEqualSelectorFamilyOptions<T, P extends SerializableParam>
+  extends Pick<ReadOnlySelectorFamilyOptions<T, P>, "key" | "get"> {
   equals: (a: T, b: T) => boolean;
 }
 
@@ -64,7 +67,6 @@ export function equalSelectorFamily<T, P extends SerializableParam>(options: Rea
       }
       prior.set(param, latest);
       return latest as T;
-    },
-    ...'set' in options ? {set: options.set} : {}
+    }, ...'set' in options ? {set: options.set} : {}
   });
 }

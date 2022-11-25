@@ -7,7 +7,6 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 
 use crossbeam::queue::SegQueue;
-use futures::StreamExt;
 use itertools::Itertools;
 use jwalk::WalkDirGeneric;
 use log::{debug, warn};
@@ -20,6 +19,7 @@ use crate::skip_cache::CachedPath;
 use crate::tmutil::{is_excluded, ExclusionAction, ExclusionActionBatch};
 
 /// Walk through a directory with given rules recursively and return an exclusion action plan.
+#[allow(clippy::needless_pass_by_value)]
 #[must_use]
 pub fn walk_recursive(
     config: WalkConfig,
