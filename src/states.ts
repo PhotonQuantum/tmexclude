@@ -152,8 +152,9 @@ export const perDirState = equalSelectorFamily<PreDirectory, string>({
   },
   set: (dirPath: string) => ({set}, newValue) => {
     console.log("set dir", dirPath, newValue);
-    set(dirsState, (prev) => ((!(newValue instanceof DefaultValue) && prev !== null) ? prev.map(
-      (dir) => dir.path === newValue.path ? newValue : dir) : prev));
+    set(dirsState, (prev) => ((!(newValue instanceof DefaultValue) && prev !== null) ?
+      prev.map((dir) => dir.path === newValue.path ? newValue : dir) :
+      prev));
   },
   equals: _.isEqual
 });

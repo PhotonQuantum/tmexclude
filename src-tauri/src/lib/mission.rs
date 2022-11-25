@@ -1,3 +1,5 @@
+#![allow(clippy::use_self)]
+
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -52,6 +54,9 @@ impl Mission {
     /// Create a new mission.
     ///
     /// This function will start a watcher task.
+    ///
+    /// # Errors
+    /// Returns error if can't load config.
     pub fn new_arc(
         app: AppHandle,
         config_manager: ConfigManager,
@@ -88,6 +93,9 @@ impl Mission {
     /// Set new config.
     ///
     /// This method will restart watcher task.
+    ///
+    /// # Errors
+    /// Returns error if can't persist config, or can't parse surface config (shouldn't happen).
     pub fn set_config(self: Arc<Self>, config: PreConfig) -> Result<(), ConfigError> {
         self.config_manager.save(&config)?;
         let config_ = Config::try_from(config.clone())?;

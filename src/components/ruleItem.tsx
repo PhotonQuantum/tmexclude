@@ -11,11 +11,11 @@ type RuleItemProps = {
 }
 
 export const RuleItem = React.memo(({
-                     name,
-                     value,
-                     allPaths,
-                     ruleNames
-                   }: RuleItemProps) => {
+                                      name,
+                                      value,
+                                      allPaths,
+                                      ruleNames
+                                    }: RuleItemProps) => {
   console.log("rule item rerender", name);
   const setRules = useSetRecoilState(rulesState);
   const setValue = useSetRecoilState(perRuleState(name));

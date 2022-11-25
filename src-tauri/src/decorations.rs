@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
-use cocoa::appkit::{CGFloat, NSView, NSWindow, NSWindowButton};
 use cocoa::appkit::NSWindowTitleVisibility;
+use cocoa::appkit::{CGFloat, NSView, NSWindow, NSWindowButton};
 use cocoa::base::id;
 use cocoa::foundation::{NSPoint, NSRect};
 use objc::msg_send;
