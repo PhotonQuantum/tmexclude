@@ -32,7 +32,7 @@ maplit = "1.0"
 tap = "1.0"
 log = "0.4"
 thiserror = "1.0"
-ts-rs = "6.2"
+ts-rs = { git = "https://github.com/Aleph-Alpha/ts-rs.git" }
 eyre = "0.6"
 xattr = "0.2"
 jwalk = "0.6"

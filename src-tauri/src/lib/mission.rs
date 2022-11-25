@@ -1,13 +1,20 @@
+use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::{io, mem};
 
 use arc_swap::ArcSwap;
-use parking_lot::Mutex;
-use tauri::async_runtime::{JoinHandle};
+use parking_lot::{Mutex, RwLock};
+use serde::Serialize;
+use tauri::async_runtime::{channel, JoinHandle};
 use tauri::{AppHandle, Manager};
+use ts_rs::TS;
 
 use crate::config::{Config, ConfigManager, PreConfig};
 use crate::error::ConfigError;
+use crate::metrics::Metrics;
+use crate::tmutil::ExclusionActionBatch;
+use crate::{walk_recursive, watch_task, Metrics};
 
 pub struct Mission {
     app: AppHandle,
@@ -16,6 +23,29 @@ pub struct Mission {
     config: ArcSwap<Config>,
     watcher_handle: Mutex<JoinHandle<io::Result<()>>>,
     metrics: Arc<Metrics>,
+    scan_status: RwLock<ScanStatus>,
+    scan_handle: Mutex<Option<ScanHandle>>,
+}
+
+pub struct ScanHandle {
+    abort_flag: Arc<AtomicBool>,
+    task_handle: JoinHandle<()>,
+}
+
+impl ScanHandle {
+    pub fn stop(self) {
+        self.abort_flag.store(true, Ordering::Relaxed);
+        self.task_handle.abort();
+    }
+}
+
+#[derive(Debug, Clone, Default, Serialize, TS)]
+#[ts(export, export_to = "../src/bindings/")]
+pub enum ScanStatus {
+    #[default]
+    Idle,
+    Scanning(PathBuf),
+    Result(ExclusionActionBatch),
 }
 
 impl Mission {
@@ -38,6 +68,8 @@ impl Mission {
                 config: ArcSwap::from_pointee(config),
                 watcher_handle: Mutex::new(handle),
                 metrics: Arc::new(Metrics::default()),
+                scan_status: Default::default(),
+                scan_handle: Default::default(),
             }
         }))
     }
@@ -78,5 +110,49 @@ impl Mission {
         self.app
             .emit_all("config_changed", self.config())
             .expect("failed to broadcast event");
+    }
+    pub fn stop_full_scan(&self) {
+        if let Some(handle) = self.scan_handle.lock().take() {
+            handle.stop();
+            *self.scan_status.write() = ScanStatus::Idle;
+        }
+    }
+    pub fn scan_status(&self) -> ScanStatus {
+        self.scan_status.read().clone()
+    }
+    pub fn full_scan(self: Arc<Self>) {
+        self.stop_full_scan();
+
+        let abort = Arc::new(AtomicBool::new(false));
+        let this = self.clone();
+
+        let scan_task = {
+            let abort = abort.clone();
+            async move {
+                let (curr_tx, mut curr_rx) = channel(128);
+                std::thread::spawn({
+                    let this = this.clone();
+                    move || {
+                        let walk_config = (*this.config_().walk).clone();
+                        let result = walk_recursive(walk_config, curr_tx, abort);
+                        *this.scan_status.write() = ScanStatus::Result(result);
+                    }
+                });
+
+                while let Some(curr) = curr_rx.recv().await {
+                    let status = ScanStatus::Scanning(curr);
+                    *this.scan_status.write() = status.clone();
+                    this.app
+                        .emit_all("scan_status_changed", status)
+                        .expect("failed to broadcast event");
+                }
+            }
+        };
+
+        let handle = ScanHandle {
+            abort_flag: abort,
+            task_handle: tauri::async_runtime::spawn(scan_task),
+        };
+        self.scan_handle.lock().replace(handle);
     }
 }

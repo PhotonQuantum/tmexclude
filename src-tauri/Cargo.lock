@@ -3199,7 +3199,6 @@ dependencies = [
  "tauri-build",
  "tempfile",
  "thiserror",
- "toml",
  "ts-rs",
  "window-vibrancy",
  "xattr",
@@ -3317,9 +3316,8 @@ checksum = "f1ee9bd9239c339d714d657fac840c6d2a4f9c45f4f9ec7b0975113458be78db"
 
 [[package]]
 name = "ts-rs"
-version = "6.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4added4070a4fdf9df03457206cd2e4b12417c8560a2954d91ffcbe60177a56a"
+version = "6.2.0"
+source = "git+https://github.com/Aleph-Alpha/ts-rs.git#b4ba8b81fd8833296e99285eae7608864c52e51e"
 dependencies = [
  "thiserror",
  "ts-rs-macros",
@@ -3328,8 +3326,7 @@ dependencies = [
 [[package]]
 name = "ts-rs-macros"
 version = "6.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f807fdb3151fee75df7485b901a89624358cd07a67a8fb1a5831bf5a07681ff"
+source = "git+https://github.com/Aleph-Alpha/ts-rs.git#b4ba8b81fd8833296e99285eae7608864c52e51e"
 dependencies = [
  "Inflector",
  "proc-macro2",

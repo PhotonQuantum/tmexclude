@@ -9,7 +9,9 @@ use core_foundation::number::{kCFBooleanFalse, kCFBooleanTrue};
 use core_foundation::url;
 use core_foundation::url::kCFURLIsExcludedFromBackupKey;
 use log::{info, warn};
+use serde::{Deserialize, Serialize};
 use tap::TapFallible;
+use ts_rs::TS;
 
 /// Check whether a path is excluded from time machine.
 ///
@@ -25,7 +27,8 @@ pub fn is_excluded(path: impl AsRef<Path>) -> std::io::Result<bool> {
 }
 
 /// Represents a batch of tmutil modifications.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../src/bindings/")]
 pub struct ExclusionActionBatch {
     /// Paths to be added to backup exclusion list.
     pub add: Vec<PathBuf>,
