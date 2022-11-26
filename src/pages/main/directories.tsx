@@ -1,15 +1,15 @@
 import {getMainLayout} from "../../components/mainLayout";
 import {
-  Badge, Box, Button, Container, createStyles, MultiSelect, Popover, ScrollArea, Stack, Table, Text, Tooltip
+  Badge, Box, Button, Container, createStyles, MultiSelect, Popover, ScrollArea, Stack, Table, Text
 } from "@mantine/core";
 import {IconMinus, IconPlus} from "@tabler/icons";
-import React, {useEffect, useState} from "react";
+import React, {useState} from "react";
 import {useRecoilState, useRecoilValue, useSetRecoilState} from "recoil";
 import {dirsState, perDirState, ruleNamesState, skipsState} from "../../states";
 import {open} from "@tauri-apps/api/dialog";
-import {truncatePath} from "../../utils";
 import _ from "lodash";
 import {createScopedKeydownHandler} from "@mantine/utils";
+import {PathText} from "../../components/PathText";
 
 const buttonStyles = {
   root: {paddingRight: 7},
@@ -34,14 +34,8 @@ const WatchedDirItem = React.memo(({
                                      ruleNames
                                    }: WatchedDirItemProps) => {
   const setValue = useSetRecoilState(perDirState(path));
-  const [[truncated, truncatedPath], setTruncated] = useState<[boolean, string]>([false, path]);
   const setDirs = useSetRecoilState(dirsState);
   const [popOverOpened, setPopOverOpened] = useState(false);
-  useEffect(() => {
-    truncatePath(path).then((truncated: [boolean, string]) => {
-      setTruncated(truncated);
-    });
-  }, [path]);
 
   const removeDir = () => {
     setDirs((dirs) => {
@@ -66,12 +60,10 @@ const WatchedDirItem = React.memo(({
              }
            })}>
         <td>
-          <Tooltip label={path} disabled={!truncated}>
-            <Text sx={{
-              cursor: "pointer",
-              minWidth: 70
-            }}>{truncatedPath}</Text>
-          </Tooltip>
+          <PathText keepFirst={3} keepLast={1} path={path} lineClamp={1} sx={{
+            cursor: "pointer",
+            minWidth: 70
+          }}/>
         </td>
         <td>{rules.map((rule) => (<Badge key={rule} variant={"light"}>
           <Text size={9} sx={{cursor: "pointer"}}>{rule}</Text>
@@ -174,7 +166,7 @@ const SkippedDirs = () => {
         e.preventDefault();
       }
     }}>
-      <Table highlightOnHover m={"auto"}>
+      <Table highlightOnHover>
         <tbody>
         {skipped.map((path, idx) => (<tr key={path}
                                          tabIndex={0}
@@ -193,7 +185,7 @@ const SkippedDirs = () => {
                                          })}
                                          onClick={() => setSelected(idx)}>
           <td>
-            <Text>{path}</Text>
+            <PathText keepFirst={3} keepLast={1} path={path} lineClamp={1}/>
           </td>
         </tr>))}
         </tbody>
