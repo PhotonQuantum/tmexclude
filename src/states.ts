@@ -4,6 +4,7 @@ import _ from "lodash";
 import {PreRule} from "./bindings/PreRule";
 import {equalSelector, equalSelectorFamily} from "./equalSelector";
 import {PreDirectory} from "./bindings/PreDirectory";
+import {ScanStatus} from "./bindings/ScanStatus";
 
 const initialFetchConfig = async () => {
   console.log("fetching config");
@@ -183,3 +184,57 @@ export const configChangedState = selector({
     return !_.isEqual(draft, final);
   }
 });
+
+const initialFetchScanStatus = async () => {
+  if (typeof window === "undefined") {
+    return {step: "idle"} as ScanStatus;
+  }
+  const invoke = await import("@tauri-apps/api").then(tauri => tauri.invoke);
+  return await invoke<ScanStatus>("scan_status");
+}
+
+const scanStatusEffect: AtomEffect<ScanStatus> = ({setSelf}) => {
+  const f = async () => {
+    if (typeof window === "undefined") {
+      return () => {
+      };
+    }
+    const listen = await import("@tauri-apps/api/event").then(tauri => tauri.listen);
+    return await listen<ScanStatus>("scan_status_changed", ({payload}) => {
+      setSelf(payload);
+    });
+  }
+  const unlisten = f();
+  return () => {
+    unlisten.then(unlisten => unlisten());
+  }
+}
+
+export const scanStatusState = atom<ScanStatus>({
+  key: "scanStatus",
+  default: initialFetchScanStatus(),
+  effects: [scanStatusEffect,]
+})
+
+export const scanStepState = selector({
+  key: "scanStep",
+  get: ({get}) => (get(scanStatusState).step),
+})
+
+export const scanCurrentState = selector({
+  key: "scanCurrent",
+  get: ({get}) => {
+    const scanStatus = get(scanStatusState);
+    if (scanStatus.step === "scanning") {
+      return {
+        path: scanStatus.content.current_path,
+        found: scanStatus.content.found
+      };
+    } else {
+      return {
+        path: "N/A",
+        found: 0
+      };
+    }
+  }
+})

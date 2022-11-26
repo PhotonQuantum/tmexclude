@@ -3,7 +3,7 @@
 pub use config::{ConfigManager, PreConfig};
 pub use error::ConfigError;
 pub use metrics::Metrics;
-pub use mission::Mission;
+pub use mission::{Mission, ScanStatus};
 pub use walker::{walk_non_recursive, walk_recursive};
 pub use watcher::watch_task;
 
