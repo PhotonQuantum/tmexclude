@@ -1,3 +1,5 @@
+import {MutableRefObject, useEffect, useLayoutEffect, useRef, useState} from "react";
+
 export const disableMenu = () => {
   if (typeof window === "undefined") {
     return;
@@ -38,14 +40,40 @@ function _getHomeDirPath() {
 
 const getHomeDirPath = _getHomeDirPath();
 
-export const truncatePath: (path: string) => Promise<[boolean, string]> = async (path: string) => {
+export const truncatePath: (path: string, keepFirst: number,
+                            keepLast: number) => Promise<[boolean, string]> = async (path, keepFirst, keepLast) => {
   const homeReplaced = path.replace(await getHomeDirPath(), "~/");
   let changed = homeReplaced !== path;
   path = homeReplaced;
 
   const parts = path.split('/');
-  if (parts.length <= 4) {
+  if (parts.length <= keepFirst + keepLast) {
     return [changed, path];
   }
-  return [true, parts.slice(0, 3).join('/') + '/.../' + parts.slice(-1)];
+  return [true, parts.slice(0, keepFirst).join('/') + '/.../' + parts.slice(-keepLast).join('/')];
 }
+
+export const useTruncatedPath = (path: string, keepFirst: number, keepLast: number) => {
+  const [truncated, setTruncated] = useState<[boolean, string]>([false, path]);
+  useEffect(() => {
+    truncatePath(path, keepFirst, keepLast).then(setTruncated);
+  }, [path, keepFirst, keepLast]);
+  return truncated;
+}
+
+export const useIsOverflow = <T extends HTMLElement = any>() => {
+  const ref = useRef<T>(null);
+  const [isOverflow, setIsOverflow] = useState(false);
+
+  useLayoutEffect(() => {
+    const {current} = ref;
+
+    if (current) {
+      const hasOverflow = current.scrollHeight > current.clientHeight;
+
+      setIsOverflow(hasOverflow);
+    }
+  }, [ref.current]);
+
+  return {ref, isOverflow};
+};
