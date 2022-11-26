@@ -24,6 +24,7 @@ use crate::tmutil::{is_excluded, ExclusionAction, ExclusionActionBatch};
 pub fn walk_recursive(
     config: WalkConfig,
     curr_tx: Sender<PathBuf>,
+    found: Arc<AtomicUsize>,
     abort: Arc<AtomicBool>,
 ) -> ExclusionActionBatch {
     let batch_queue = Arc::new(SegQueue::new());
@@ -92,6 +93,7 @@ pub fn walk_recursive(
                         })
                         .collect();
                     let diff = generate_diff(path, &shallow_list, &*config.directories);
+                    found.fetch_add(diff.count(), Ordering::Relaxed);
 
                     // Exclude already excluded or uncovered children.
                     for (entry, excluded) in children {

@@ -1,7 +1,7 @@
 #![allow(clippy::use_self)]
 
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::{io, mem};
 
@@ -16,7 +16,8 @@ use crate::config::{Config, ConfigManager, PreConfig};
 use crate::error::ConfigError;
 use crate::metrics::Metrics;
 use crate::tmutil::ExclusionActionBatch;
-use crate::{walk_recursive, watch_task, Metrics};
+use crate::walker::walk_recursive;
+use crate::watcher::watch_task;
 
 pub struct Mission {
     app: AppHandle,
@@ -43,10 +44,14 @@ impl ScanHandle {
 
 #[derive(Debug, Clone, Default, Serialize, TS)]
 #[ts(export, export_to = "../src/bindings/")]
+#[serde(tag = "step", content = "content", rename_all = "kebab-case")]
 pub enum ScanStatus {
     #[default]
     Idle,
-    Scanning(PathBuf),
+    Scanning {
+        current_path: PathBuf,
+        found: usize,
+    },
     Result(ExclusionActionBatch),
 }
 
@@ -119,11 +124,17 @@ impl Mission {
             .emit_all("config_changed", self.config())
             .expect("failed to broadcast event");
     }
+    fn set_scan_status(&self, status: ScanStatus) {
+        *self.scan_status.write() = status.clone();
+        self.app
+            .emit_all("scan_status_changed", status)
+            .expect("failed to broadcast event");
+    }
     pub fn stop_full_scan(&self) {
         if let Some(handle) = self.scan_handle.lock().take() {
             handle.stop();
-            *self.scan_status.write() = ScanStatus::Idle;
         }
+        self.set_scan_status(ScanStatus::Idle);
     }
     pub fn scan_status(&self) -> ScanStatus {
         self.scan_status.read().clone()
@@ -132,6 +143,7 @@ impl Mission {
         self.stop_full_scan();
 
         let abort = Arc::new(AtomicBool::new(false));
+        let found = Arc::new(AtomicUsize::new(0));
         let this = self.clone();
 
         let scan_task = {
@@ -140,19 +152,19 @@ impl Mission {
                 let (curr_tx, mut curr_rx) = channel(128);
                 std::thread::spawn({
                     let this = this.clone();
+                    let found = found.clone();
                     move || {
                         let walk_config = (*this.config_().walk).clone();
-                        let result = walk_recursive(walk_config, curr_tx, abort);
-                        *this.scan_status.write() = ScanStatus::Result(result);
+                        let result = walk_recursive(walk_config, curr_tx, found, abort);
+                        this.set_scan_status(ScanStatus::Result(result));
                     }
                 });
 
                 while let Some(curr) = curr_rx.recv().await {
-                    let status = ScanStatus::Scanning(curr);
-                    *this.scan_status.write() = status.clone();
-                    this.app
-                        .emit_all("scan_status_changed", status)
-                        .expect("failed to broadcast event");
+                    this.set_scan_status(ScanStatus::Scanning {
+                        current_path: curr,
+                        found: found.load(Ordering::Relaxed),
+                    });
                 }
             }
         };

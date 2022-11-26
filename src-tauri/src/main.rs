@@ -15,7 +15,7 @@ use tauri::{
 };
 use window_vibrancy::NSVisualEffectMaterial;
 
-use tmexclude_lib::{ConfigManager, Metrics, Mission, PreConfig};
+use tmexclude_lib::{ConfigManager, Metrics, Mission, PreConfig, ScanStatus};
 
 use crate::decorations::WindowExt;
 use crate::plugins::{BackgroundPlugin, EnvironmentPlugin};
@@ -39,6 +39,22 @@ fn set_config(mission: tauri::State<Arc<Mission>>, config: PreConfig) -> Result<
     let mission = mission.inner().clone();
     eprintln!("set_config: {:?}", config);
     mission.set_config(config).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn scan_status(mission: tauri::State<Arc<Mission>>) -> ScanStatus {
+    mission.scan_status()
+}
+
+#[tauri::command]
+fn start_full_scan(mission: tauri::State<Arc<Mission>>) {
+    mission.inner().clone().full_scan()
+}
+
+#[tauri::command]
+fn stop_full_scan(mission: tauri::State<Arc<Mission>>) {
+    mission.stop_full_scan();
+    eprintln!("Scan stopped")
 }
 
 fn system_tray() -> SystemTray {
@@ -81,7 +97,7 @@ fn main() {
         })
         .plugin(BackgroundPlugin)
         .plugin(EnvironmentPlugin)
-        .invoke_handler(tauri::generate_handler![metrics, get_config, set_config])
+        .invoke_handler(tauri::generate_handler![metrics, get_config, set_config, scan_status, start_full_scan, stop_full_scan])
         .setup(move |app| {
             // TODO circular dependency?
             app.manage(

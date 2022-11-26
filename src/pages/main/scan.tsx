@@ -13,9 +13,12 @@ import {
   IconSquare
 } from "@tabler/icons";
 import {useTheme} from "@emotion/react";
-import {useState} from "react";
 import {AnimatePresence, motion} from "framer-motion";
 import {getMainLayout} from "../../components/mainLayout";
+import {useRecoilValue} from "recoil";
+import {scanCurrentState, scanStepState} from "../../states";
+import React from "react";
+import {PathText} from "../../components/PathText";
 
 interface WelcomeProps extends StackProps {
   onScan: () => void,
@@ -65,6 +68,10 @@ const InProgress = ({
                       onCancel,
                       ...props
                     }: InProgressProps) => {
+  const {
+    found,
+    path
+  } = useRecoilValue(scanCurrentState);
   const theme = useTheme();
   const {classes} = useStyles();
   const moreDimmed = theme.colorScheme === 'dark' ? theme.colors.dark[3] : theme.colors.gray[5];
@@ -74,8 +81,8 @@ const InProgress = ({
     </ThemeIcon>
     <Stack spacing={"xs"} align={"center"}>
       <Text size={"xl"}>Scanning system...</Text>
-      <Text size={"sm"} color={moreDimmed}>/User/lightquantum/blabla</Text>
-      <Text size={"sm"} color={"dimmed"}>Found 1 file(s)</Text>
+      <PathText size={"sm"} color={moreDimmed} align={"center"} lineClamp={1} keepFirst={4} keepLast={2} path={path}/>
+      <Text size={"sm"} color={"dimmed"}>Found {found} file(s)</Text>
       <ActionIcon variant={"default"} radius={16} size={32} onClick={onCancel}>
         <IconSquare size={16} strokeWidth={1.5}/>
       </ActionIcon>
@@ -156,21 +163,26 @@ const Report = ({
   </Stack>)
 }
 
+
 const Scan = () => {
-  const [step, setStep] = useState(0);
+  const scanStep = useRecoilValue(scanStepState);
+  const start_scan = async () => {
+    const invoke = await import("@tauri-apps/api").then(tauri => tauri.invoke);
+    await invoke("start_full_scan");
+  }
+  const stop_scan = async () => {
+    const invoke = await import("@tauri-apps/api").then(tauri => tauri.invoke);
+    await invoke("stop_full_scan");
+  }
   return (<Container sx={{height: "100%"}}>
     <AnimatePresence mode={"popLayout"} initial={false}>
-      {(step === 0) ? <motion.div key={"welcome"} style={{height: "100%"}}
-                                  initial={{opacity: 0}} animate={{opacity: 1}} exit={{opacity: 0}}>
-        <Welcome onScan={() => {
-          setStep(1);
-          setTimeout(() => {
-            setStep(2);
-          }, 3000)
-        }}/>
-      </motion.div> : (step === 1) ? <motion.div key={"inProgress"} style={{height: "100%"}}
-                                                 initial={{opacity: 0}} animate={{opacity: 1}} exit={{opacity: 0}}>
-        <InProgress onCancel={() => setStep(0)}/>
+      {(scanStep === "idle") ? <motion.div key={"welcome"} style={{height: "100%"}}
+                                           initial={{opacity: 0}} animate={{opacity: 1}} exit={{opacity: 0}}>
+        <Welcome onScan={() => start_scan()}/>
+      </motion.div> : (scanStep === "scanning") ? <motion.div key={"inProgress"} style={{height: "100%"}}
+                                                              initial={{opacity: 0}} animate={{opacity: 1}}
+                                                              exit={{opacity: 0}}>
+        <InProgress onCancel={() => stop_scan()}/>
       </motion.div> : <motion.div key={"review"} style={{height: "100%"}}
                                   initial={{
                                     x: 50,
@@ -187,11 +199,8 @@ const Scan = () => {
                                   transition={{ease: "easeOut"}}
       >
         <Report files={DEMO_FILES_EMPTY} onDetail={() => {
-          setStep(0);
         }}
-                onBack={() => {
-                  setStep(0);
-                }}
+                onBack={() => stop_scan()}
         />
       </motion.div>}
     </AnimatePresence>
