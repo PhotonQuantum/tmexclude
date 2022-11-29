@@ -18,7 +18,7 @@ import {getMainLayout} from "../../components/mainLayout";
 import {useRecoilValue} from "recoil";
 import {scanCurrentState, scanStepState} from "../../states";
 import React from "react";
-import {PathText} from "../../components/PathText";
+import {PathText} from "../../components/pathText";
 
 interface WelcomeProps extends StackProps {
   onScan: () => void,
