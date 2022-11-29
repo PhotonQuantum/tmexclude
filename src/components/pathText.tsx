@@ -6,6 +6,7 @@ export interface PathTextProps extends TextProps {
   keepFirst: number;
   keepLast: number;
   ref?: any;
+  withinPortal?: boolean;
   path: string;
 }
 
@@ -14,6 +15,7 @@ export const PathText = ({
                            keepLast,
                            path,
                            ref,
+                           withinPortal,
                            ...props
                          }: PathTextProps) => {
   const {
@@ -22,7 +24,7 @@ export const PathText = ({
   } = useIsOverflow();
   const mergedRef = useMergedRef(ref, overflowRef);
   const [truncated, truncatedPath] = useTruncatedPath(path, keepFirst, keepLast);
-  return (<Tooltip label={path} multiline disabled={!truncated && !isOverflow}>
+  return (<Tooltip label={path} multiline disabled={!truncated && !isOverflow} withinPortal={withinPortal}>
     <Text ref={mergedRef} {...props}>{truncatedPath}</Text>
   </Tooltip>)
 }

@@ -9,13 +9,16 @@ extern crate objc;
 
 use std::sync::Arc;
 
+use tap::TapFallible;
 use tauri::{
     ActivationPolicy, CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu,
     SystemTrayMenuItem,
 };
 use window_vibrancy::NSVisualEffectMaterial;
 
-use tmexclude_lib::{ConfigManager, Metrics, Mission, PreConfig, ScanStatus};
+use tmexclude_lib::{
+    ApplyErrors, ConfigManager, ExclusionActionBatch, Metrics, Mission, PreConfig, ScanStatus,
+};
 
 use crate::decorations::WindowExt;
 use crate::plugins::{BackgroundPlugin, EnvironmentPlugin};
@@ -55,6 +58,19 @@ fn start_full_scan(mission: tauri::State<Arc<Mission>>) {
 fn stop_full_scan(mission: tauri::State<Arc<Mission>>) {
     mission.stop_full_scan();
     eprintln!("Scan stopped")
+}
+
+#[tauri::command]
+async fn apply_action_batch(batch: ExclusionActionBatch) -> Result<(), ApplyErrors> {
+    eprintln!("apply_action_batch: {:?}", batch);
+    tauri::async_runtime::spawn_blocking(move || {
+        let r = batch.apply().tap_err(|e| {
+            eprintln!("Error when applying batch: {:?}", e);
+        });
+        ApplyErrors::from(r)
+    })
+    .await
+    .expect("spawn_blocking failed")
 }
 
 fn system_tray() -> SystemTray {
@@ -97,7 +113,15 @@ fn main() {
         })
         .plugin(BackgroundPlugin)
         .plugin(EnvironmentPlugin)
-        .invoke_handler(tauri::generate_handler![metrics, get_config, set_config, scan_status, start_full_scan, stop_full_scan])
+        .invoke_handler(tauri::generate_handler![
+            metrics,
+            get_config,
+            set_config,
+            scan_status,
+            start_full_scan,
+            stop_full_scan,
+            apply_action_batch
+        ])
         .setup(move |app| {
             // TODO circular dependency?
             app.manage(

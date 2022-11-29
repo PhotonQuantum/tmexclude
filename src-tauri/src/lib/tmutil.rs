@@ -1,17 +1,22 @@
 //! Utils needed to operate on `TimeMachine`.
 use std::borrow::Borrow;
+use std::collections::HashMap;
 use std::ops::{Add, AddAssign};
 use std::path::{Path, PathBuf};
 use std::ptr;
 
-use core_foundation::base::{TCFType, ToVoid};
+use core_foundation::base::{CFTypeRef, TCFType, ToVoid};
+use core_foundation::error::{CFError, CFErrorRef};
 use core_foundation::number::{kCFBooleanFalse, kCFBooleanTrue};
+use core_foundation::string::CFStringRef;
 use core_foundation::url;
-use core_foundation::url::kCFURLIsExcludedFromBackupKey;
+use core_foundation::url::{kCFURLIsExcludedFromBackupKey, CFURL};
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use tap::TapFallible;
 use ts_rs::TS;
+
+use crate::error::ApplyError;
 
 /// Check whether a path is excluded from time machine.
 ///
@@ -48,15 +53,30 @@ impl ExclusionActionBatch {
         self.add.len() + self.remove.len()
     }
     /// Apply the batch.
-    pub fn apply(self) {
-        self.add.into_iter().for_each(|path| {
-            info!("Excluding {:?} from backups", path);
-            ExclusionAction::Add(path).apply();
-        });
-        self.remove.into_iter().for_each(|path| {
-            info!("Including {:?} in backups", path);
-            ExclusionAction::Remove(path).apply();
-        });
+    pub fn apply(self) -> Result<(), HashMap<PathBuf, ApplyError>> {
+        let errors: HashMap<_, _> = self
+            .add
+            .into_iter()
+            .filter_map(|path| {
+                info!("Excluding {:?} from backups", path);
+                ExclusionAction::Add(path.clone())
+                    .apply()
+                    .err()
+                    .map(|e| (path, e))
+            })
+            .chain(self.remove.into_iter().filter_map(|path| {
+                info!("Including {:?} in backups", path);
+                ExclusionAction::Remove(path.clone())
+                    .apply()
+                    .err()
+                    .map(|e| (path, e))
+            }))
+            .collect();
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(errors)
+        }
     }
 }
 
@@ -102,7 +122,7 @@ pub enum ExclusionAction {
 
 impl ExclusionAction {
     /// Apply the action.
-    pub fn apply(self) {
+    pub fn apply(self) -> Result<(), ApplyError> {
         let value = unsafe {
             if matches!(self, Self::Add(_)) {
                 kCFBooleanTrue
@@ -112,17 +132,33 @@ impl ExclusionAction {
         };
         match self {
             Self::Add(path) | Self::Remove(path) => {
-                if let Some(path) = url::CFURL::from_path(path, false) {
-                    unsafe {
-                        url::CFURLSetResourcePropertyForKey(
-                            path.as_concrete_TypeRef(),
-                            kCFURLIsExcludedFromBackupKey,
-                            value.to_void(),
-                            ptr::null_mut(),
-                        );
-                    }
+                if let Some(path) = CFURL::from_path(path, false) {
+                    Ok(set_resource_property_for_key(
+                        &path,
+                        unsafe { kCFURLIsExcludedFromBackupKey },
+                        value.to_void(),
+                    )?)
+                } else {
+                    Err(ApplyError::InvalidURL)
                 }
             }
         }
+    }
+}
+
+fn set_resource_property_for_key(
+    url: &CFURL,
+    key: CFStringRef,
+    value: CFTypeRef,
+) -> Result<(), CFError> {
+    let mut err: CFErrorRef = ptr::null_mut();
+    let result = unsafe {
+        url::CFURLSetResourcePropertyForKey(url.as_concrete_TypeRef(), key, value, &mut err)
+    };
+    if result == 0 {
+        let err = unsafe { CFError::wrap_under_create_rule(err) };
+        Err(err)
+    } else {
+        Ok(())
     }
 }
