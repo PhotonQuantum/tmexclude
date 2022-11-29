@@ -8,6 +8,7 @@ import {NextPage} from "next";
 import {SWRConfig} from "swr";
 import {disableMenu} from "../utils";
 import {RecoilRoot} from "recoil";
+import {SyncActionBatch} from "../states";
 
 export type NextPageWithLayout<P = {}, IP = P> = NextPage<P, IP> & {
   getLayout?: (page: ReactElement) => ReactNode
@@ -89,6 +90,7 @@ export default function MyApp({
         }}
       >
         <RecoilRoot>
+          <SyncActionBatch />
           {getLayout(<Component {...pageProps} />)}
         </RecoilRoot>
       </MantineProvider>
