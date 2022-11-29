@@ -116,7 +116,7 @@ const WatchedDir = () => {
   }
   return (<>
     <Text>Directories to watch and scan</Text>
-    <ScrollArea sx={{height: "40%"}}>
+    <ScrollArea sx={{flexGrow: 1, flexBasis: 0}}>
       <Table highlightOnHover>
         <tbody>
         {dirs.map(({
@@ -161,7 +161,7 @@ const SkippedDirs = () => {
   };
   return (<>
     <Text>Skip the following paths</Text>
-    <ScrollArea sx={{height: "40%"}} onKeyDown={(e) => {
+    <ScrollArea sx={{flexGrow: 1, flexBasis: 0}} onKeyDown={(e) => {
       if (e.key in ["ArrowUp", "ArrowDown", " "]) {
         e.preventDefault();
       }
@@ -206,7 +206,7 @@ const SkippedDirs = () => {
 
 const Directories = () => {
   return (<Container sx={{height: "100%"}}>
-    <Stack py={"xl"} sx={{height: "100%"}}>
+    <Stack py={"xl"} spacing={"xs"} sx={{height: "100%"}}>
       <WatchedDir/>
       <SkippedDirs/>
     </Stack>
