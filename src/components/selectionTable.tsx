@@ -1,20 +1,7 @@
 import {Checkbox, createStyles, ScrollArea, Stack, StackProps, Table, TextInput} from "@mantine/core";
 import React, {useMemo, useState} from "react";
 import {PathText} from "./pathText";
-
-const useStyles = createStyles((theme) => ({
-  rowSelected: {
-    backgroundColor:
-      theme.colorScheme === 'dark'
-        ? theme.fn.rgba(theme.colors[theme.primaryColor][7], 0.2)
-        : theme.colors[theme.primaryColor][0],
-  },
-  stickyHeader: {
-    position: 'sticky',
-    top: 0,
-    backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[7] : theme.white,
-  },
-}))
+import {useTableStyles} from "../utils";
 
 export interface SelectionTableProps extends Omit<StackProps, "onChange"> {
   data: Array<string>,
@@ -28,7 +15,7 @@ export const SelectionTable = React.memo(({
                                             onChange,
                                             ...props
                                           }: SelectionTableProps) => {
-  const {classes, cx} = useStyles();
+  const {classes, cx} = useTableStyles();
 
   const allSelected = selection.length === data.length;
   const toggleAll = () => {
@@ -82,7 +69,7 @@ type SelectionRowProps = {
 }
 
 const SelectionRow = React.memo(({selected, item, onToggle}: SelectionRowProps) => {
-  const {classes, cx} = useStyles();
+  const {classes, cx} = useTableStyles();
 
   return (
     <tr key={item} className={cx({[classes.rowSelected]: selected})}>

@@ -1,4 +1,5 @@
 import {MutableRefObject, useEffect, useLayoutEffect, useRef, useState} from "react";
+import {createStyles} from "@mantine/core";
 
 export const disableMenu = () => {
   if (typeof window === "undefined") {
@@ -77,3 +78,18 @@ export const useIsOverflow = <T extends HTMLElement = any>() => {
 
   return {ref, isOverflow};
 };
+
+export const useTableStyles = createStyles((theme) => ({
+  rowSelected: {
+    backgroundColor:
+      theme.colorScheme === 'dark'
+        ? theme.fn.rgba(theme.colors[theme.primaryColor][7], 0.2)
+        : theme.colors[theme.primaryColor][0],
+  },
+  stickyHeader: {
+    position: 'sticky',
+    top: 0,
+    backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[7] : theme.white,
+  },
+}))
+
