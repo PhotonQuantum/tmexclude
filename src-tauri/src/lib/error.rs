@@ -1,6 +1,11 @@
+use std::collections::HashMap;
 use std::error::Error;
+use std::path::PathBuf;
 
+use core_foundation::error::CFError;
+use serde::Serialize;
 use thiserror::Error;
+use ts_rs::TS;
 
 /// Error that may occur when loading a config.
 #[allow(clippy::large_enum_variant)]
@@ -44,4 +49,26 @@ pub enum ConfigIOError {
     Deserialize(#[source] Box<dyn Error + Send + Sync>),
     #[error("Error when serializing config file")]
     Serialize(#[source] Box<dyn Error + Send + Sync>),
+}
+
+#[derive(Debug, Error)]
+pub enum ApplyError {
+    #[error("URL is invalid")]
+    InvalidURL,
+    #[error("Failed to apply rule: {0}")]
+    PropertyFail(#[from] CFError),
+}
+
+#[derive(Serialize, TS)]
+#[ts(export, export_to = "../src/bindings/")]
+pub struct ApplyErrors {
+    pub errors: HashMap<PathBuf, String>,
+}
+
+impl ApplyErrors {
+    pub fn from(r: Result<(), HashMap<PathBuf, ApplyError>>) -> Result<(), Self> {
+        r.map_err(|e| Self {
+            errors: e.into_iter().map(|(k, v)| (k, v.to_string())).collect(),
+        })
+    }
 }

@@ -7,6 +7,7 @@ import {PreDirectory} from "./bindings/PreDirectory";
 import {ScanStatus} from "./bindings/ScanStatus";
 import {ExclusionActionBatch} from "./bindings/ExclusionActionBatch";
 import {useEffect} from "react";
+import {ApplyErrors} from "./bindings/ApplyErrors";
 
 const initialFetchConfig = async () => {
   if (typeof window === "undefined") {
@@ -100,6 +101,7 @@ export const perRuleState = equalSelectorFamily({
     return rules[ruleName];
   },
   set: (ruleName: string) => ({set}, newValue) => {
+    console.log("set", ruleName, newValue);
     set(rulesState, (prev) => ((!(newValue instanceof DefaultValue) && prev !== null) ? {
       ...prev,
       [ruleName]: newValue
@@ -111,7 +113,7 @@ export const perRuleState = equalSelectorFamily({
 export const allPathsState = equalSelector({
   key: "allPaths",
   get: ({get}) => {
-    const config = get(finalConfigState); // use final config here to avoid redundant re-render
+    const config = get(draftConfigState);
     const rules = config?.rules ?? {};
     return _.sortedUniq(
       _.flatMap(Object.values(rules), rule => Array.isArray(rule) ? [] : [...rule.excludes, ...rule["if-exists"]])
@@ -316,7 +318,14 @@ export const SyncActionBatch = () => {
   return null;
 }
 
-export const scanDetailState = atom({
-  key: "scanDetail",
-  default: false
+export type ScanPage = "scan" | "detail" | "applying" | "done";
+
+export const scanPageState = atom<ScanPage>({
+  key: "scanPage",
+  default: "scan"
+});
+
+export const applyErrorsState = atom<ApplyErrors|null>({
+  key: "applyErrors",
+  default: null,
 });

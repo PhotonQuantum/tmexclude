@@ -82,7 +82,11 @@ pub async fn watch_task(mission: Weak<Mission>) -> io::Result<()> {
                         if let Some(last_file) = batch.add.last() {
                             metrics.set_last_excluded(last_file.as_path());
                         }
-                        batch.apply();
+                        if let Err(errors) = batch.apply() {
+                            for (path, e) in errors {
+                                error!("Error when applying on file {}: {}", path.display(), e);
+                            }
+                        }
                     }
                 });
             }
