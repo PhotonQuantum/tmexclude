@@ -4,6 +4,7 @@ import {IconCheck, IconDots, IconFileMinus, IconFilePlus, IconRadar} from "@tabl
 import useSWR from 'swr'
 import {Metrics} from "../../bindings/Metrics";
 import ReactTimeago from "react-timeago";
+import {PathText} from "../../components/pathText";
 
 const fetcher = async (key: string) => {
   if (typeof window === "undefined") {
@@ -24,11 +25,7 @@ const Stats = () => {
         <Card radius={"lg"} withBorder>
           <Group>
             <ThemeIcon radius={"md"} size={50} variant={"gradient"}
-                       gradient={{
-                         from: "cyan",
-                         to: "indigo",
-                         deg: 105
-                       }}>
+                       gradient={{from: "cyan", to: "indigo", deg: 105}}>
               <IconFilePlus size={30} strokeWidth={1.5}/>
             </ThemeIcon>
             <Box>
@@ -45,11 +42,7 @@ const Stats = () => {
         <Card radius={"lg"} withBorder>
           <Group>
             <ThemeIcon radius={"md"} size={50} variant={"gradient"}
-                       gradient={{
-                         from: "lime",
-                         to: "teal",
-                         deg: 105
-                       }}>
+                       gradient={{from: "lime", to: "teal", deg: 105}}>
               <IconFileMinus size={30} strokeWidth={1.5}/>
             </ThemeIcon>
             <Box>
@@ -67,11 +60,7 @@ const Stats = () => {
         <Card radius={"lg"} withBorder>
           <Group>
             <ThemeIcon radius={"md"} size={50} variant={"gradient"}
-                       gradient={{
-                         from: "yellow",
-                         to: "pink",
-                         deg: 105
-                       }}>
+                       gradient={{from: "yellow", to: "pink", deg: 105}}>
               <IconRadar size={30} strokeWidth={1.5}/>
             </ThemeIcon>
             <Box>
@@ -79,12 +68,11 @@ const Stats = () => {
                 <ThemeIcon size={16} variant={"outline"} radius={"xl"} color={"orange"}>
                   <IconDots size={12} strokeWidth={3}/>
                 </ThemeIcon>
-                <Text
-                    size={"xl"}>{data?.["last-excluded"] ? data?.["last-excluded"] : "N/A"}</Text>
+                <PathText path={data?.["last-excluded"] ? data?.["last-excluded"] : "N/A"} size={"xl"} lineClamp={1} keepFirst={4} keepLast={2}/>
               </Group>
-              <Text size={"sm"} color={"dimmed"}>{(data && data["last-excluded-time"] !== 0) ? <p>
-                was excluded <ReactTimeago date={data["last-excluded-time"] * 1000}/>
-              </p> : "no files have been excluded yet"}</Text>
+              <Text size={"sm"} color={"dimmed"}>{(data && data["last-excluded-time"] !== 0) ? <span>
+                was excluded {<ReactTimeago date={data["last-excluded-time"] * 1000}/>}
+              </span> : "no files have been excluded yet"}</Text>
             </Box>
           </Group>
         </Card>
