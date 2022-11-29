@@ -9,7 +9,7 @@ import {dirsState, perDirState, ruleNamesState, skipsState} from "../../states";
 import {open} from "@tauri-apps/api/dialog";
 import _ from "lodash";
 import {createScopedKeydownHandler} from "@mantine/utils";
-import {PathText} from "../../components/PathText";
+import {PathText} from "../../components/pathText";
 
 const buttonStyles = {
   root: {paddingRight: 7},
