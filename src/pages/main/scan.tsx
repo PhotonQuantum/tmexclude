@@ -1,5 +1,16 @@
 import {
-  ActionIcon, Box, Button, Card, Container, createStyles, Group, keyframes, Stack, StackProps, Text, ThemeIcon
+  ActionIcon,
+  Box,
+  Button,
+  Card,
+  Container,
+  createStyles,
+  Group,
+  keyframes,
+  Stack,
+  StackProps,
+  Text,
+  ThemeIcon
 } from "@mantine/core"
 import {
   IconAnalyze,
@@ -15,10 +26,29 @@ import {
 import {useTheme} from "@emotion/react";
 import {AnimatePresence, motion} from "framer-motion";
 import {getMainLayout} from "../../components/mainLayout";
-import {useRecoilValue} from "recoil";
-import {scanCurrentState, scanStepState} from "../../states";
-import React from "react";
+import {useRecoilState, useRecoilValue} from "recoil";
+import {
+  actionBatchState,
+  scanCurrentState,
+  scanDetailState,
+  scanStepState,
+  selectedAddActionBatchState,
+  selectedRemoveActionBatchState
+} from "../../states";
+import React, {useMemo} from "react";
 import {PathText} from "../../components/pathText";
+import {SelectionTable} from "../../components/selectionTable";
+
+const circling = (radius: number) => keyframes({
+  "from": {transform: `rotate(0deg) translateX(${radius}px) rotate(0deg)`},
+  "to": {transform: `rotate(360deg) translateX(${radius}px) rotate(-360deg)`}
+})
+
+const useStyles = createStyles({
+  circle: {
+    animation: `${circling(10)} 2s linear infinite`,
+  }
+})
 
 interface WelcomeProps extends StackProps {
   onScan: () => void,
@@ -48,17 +78,6 @@ const Welcome = ({
     </Card>
   </Stack>)
 }
-
-const circling = (radius: number) => keyframes({
-  "from": {transform: `rotate(0deg) translateX(${radius}px) rotate(0deg)`},
-  "to": {transform: `rotate(360deg) translateX(${radius}px) rotate(-360deg)`}
-})
-
-const useStyles = createStyles(() => ({
-  circle: {
-    animation: `${circling(10)} 2s linear infinite`,
-  }
-}))
 
 interface InProgressProps extends StackProps {
   onCancel: () => void
@@ -90,30 +109,21 @@ const InProgress = ({
   </Stack>)
 }
 
-interface ReviewProps extends StackProps {
-  files: Record<string, boolean>
+interface OverviewProps extends StackProps {
+  totalItems: number,
+  selectedItems: number,
+  onBack: () => void,
   onDetail: () => void
-  onBack: () => void
 }
 
-const DEMO_FILES: Record<string, boolean> = {
-  "/Users/lightquantum/test.txt": true,
-  "/Users/lightquantum/test2.txt": true,
-  "/Users/lightquantum/test3.txt": true,
-  "/Users/lightquantum/test4.txt": true,
-  "/Users/lightquantum/test5.txt": false
-}
-
-const DEMO_FILES_EMPTY: Record<string, boolean> = {}
-
-const Report = ({
-                  files,
-                  onDetail,
-                  onBack,
-                  ...props
-                }: ReviewProps) => {
+const Overview = ({
+                    totalItems,
+                    selectedItems,
+                    onBack,
+                    onDetail,
+                    ...props
+                  }: OverviewProps) => {
   const theme = useTheme();
-  const hasFiles = Object.keys(files).length > 0;
   return (<Stack py={"xl"} sx={{
     height: "100%",
   }} {...props}>
@@ -127,27 +137,28 @@ const Report = ({
       width: "100%"
     }} position={"center"}>
       <Group position={"center"} mr={"xl"}>
-        <ThemeIcon size={128} radius={64} variant={"gradient"} gradient={hasFiles ? {
-          from: "orange",
-          to: "yellow"
-        } : {
-          from: "green",
-          to: "lime"
-        }}>
-          {hasFiles ? <IconHomeExclamation size={72} strokeWidth={1}/> : <IconHomeCheck size={72} strokeWidth={1}/>}
+        <ThemeIcon size={128} radius={64}
+                   variant={"gradient"}
+                   gradient={(selectedItems > 0) ?
+                     {from: "orange", to: "yellow"} :
+                     {from: "green", to: "lime"}}>
+          {(selectedItems > 0) ?
+            <IconHomeExclamation size={72} strokeWidth={1}/> :
+            <IconHomeCheck size={72} strokeWidth={1}/>}
         </ThemeIcon>
       </Group>
       <Stack spacing={"xs"}>
         <Text size={20}>Scan Complete</Text>
-        {hasFiles ? <>
+        {(totalItems > 0) ? <>
           <Group align={"end"} spacing={"xs"}>
-            <Text size={28} color={theme.colorScheme === "dark" ? theme.colors.blue[2] : theme.colors.blue[5]}>114514
-              items</Text>
+            <Text size={28} color={theme.colorScheme === "dark" ? theme.colors.blue[2] : theme.colors.blue[5]}>
+              {selectedItems} items
+            </Text>
             <Text size={"xs"} color={"dimmed"} pb={4}>selected</Text>
           </Group>
           <Group align={"center"}>
             <Button size={"xs"} variant={"light"} onClick={onDetail} sx={{boxShadow: "none"}}>View items</Button>
-            <Text size={"xs"} color={"dimmed"}>114514 items found</Text>
+            <Text size={"xs"} color={"dimmed"}>{totalItems} items found</Text>
           </Group>
         </> : <Text size={"sm"}>
           Everything looks good!<br/>
@@ -155,17 +166,81 @@ const Report = ({
         </Text>}
       </Stack>
     </Group>
-    {hasFiles && <Stack align={"center"} spacing={"xs"} mt={"xl"}>
-      <Button variant={"gradient"} leftIcon={<IconFilter/>}>Exclude</Button>
-      <Text size={"xs"} color={"dimmed"}>Exclude selected files from TimeMachine backups</Text>
+    {(selectedItems > 0) && <Stack align={"center"} spacing={"xs"} mt={"xl"}>
+      <Button variant={"gradient"} leftIcon={<IconFilter/>}>Apply</Button>
+      <Text size={"xs"} color={"dimmed"}>Exclude/include selected files from TimeMachine backups</Text>
     </Stack>}
     <Box sx={{flexGrow: 1}}/>
   </Stack>)
 }
 
+type DetailSelection = {
+  addSelection: Array<string>,
+  removeSelection: Array<string>,
+  setAddSelection: React.Dispatch<React.SetStateAction<Array<string>>>
+  setRemoveSelection: React.Dispatch<React.SetStateAction<Array<string>>>
+};
+
+type DetailData = {
+  addData: Array<string>,
+  removeData: Array<string>,
+}
+
+interface DetailProps extends StackProps {
+  onBack: () => void,
+  data: DetailData,
+  selection: DetailSelection,
+}
+
+const Detail = ({
+                  onBack,
+                  data,
+                  selection,
+                  ...props
+                }: DetailProps) => {
+  const {addSelection, removeSelection, setAddSelection, setRemoveSelection} = selection;
+  const {addData, removeData} = data;
+  return (<Stack py={"xl"} sx={{
+    height: "100%",
+  }} {...props}>
+    <Button size={"xs"} mr={"auto"} sx={{boxShadow: "none"}} variant={"subtle"}
+            leftIcon={<IconChevronLeft size={16} strokeWidth={1}/>}
+            onClick={onBack}>
+      Back
+    </Button>
+    <SelectionTable
+      sx={{flexGrow: 1, flexBasis: 0}}
+      data={addData} selection={addSelection} onChange={setAddSelection}
+    />
+    <SelectionTable
+      sx={{flexGrow: 1, flexBasis: 0}}
+      data={removeData} selection={removeSelection} onChange={setRemoveSelection}
+    />
+  </Stack>)
+}
 
 const Scan = () => {
   const scanStep = useRecoilValue(scanStepState);
+  const [scanDetail, setScanDetail] = useRecoilState(scanDetailState);
+
+  const actionBatch = useRecoilValue(actionBatchState);
+  const [addSelection, setAddSelection] = useRecoilState(selectedAddActionBatchState);
+  const [removeSelection, setRemoveSelection] = useRecoilState(selectedRemoveActionBatchState);
+
+  const totalItems = (actionBatch?.add.length ?? 0) + (actionBatch?.remove.length ?? 0);
+  const selectedItems = addSelection.length + removeSelection.length;
+
+  const detailData = useMemo(() => ({
+    addData: actionBatch.add,
+    removeData: actionBatch.remove,
+  }), [actionBatch.add, actionBatch.remove]);
+  const detailSelection = useMemo(() => ({
+    addSelection,
+    removeSelection,
+    setAddSelection,
+    setRemoveSelection,
+  }), [addSelection, removeSelection, setAddSelection, setRemoveSelection]);
+
   const start_scan = async () => {
     const invoke = await import("@tauri-apps/api").then(tauri => tauri.invoke);
     await invoke("start_full_scan");
@@ -174,35 +249,40 @@ const Scan = () => {
     const invoke = await import("@tauri-apps/api").then(tauri => tauri.invoke);
     await invoke("stop_full_scan");
   }
+  const fadeAnimation = {
+    initial: {opacity: 0},
+    animate: {opacity: 1},
+    exit: {opacity: 0},
+  }
+  const slideFadeAnimation = {
+    initial: {x: 50, opacity: 0},
+    animate: {x: 0, opacity: 1},
+    exit: {x: 50, opacity: 0},
+    transition: {ease: "easeOut"}
+  };
   return (<Container sx={{height: "100%"}}>
     <AnimatePresence mode={"popLayout"} initial={false}>
-      {(scanStep === "idle") ? <motion.div key={"welcome"} style={{height: "100%"}}
-                                           initial={{opacity: 0}} animate={{opacity: 1}} exit={{opacity: 0}}>
-        <Welcome onScan={() => start_scan()}/>
-      </motion.div> : (scanStep === "scanning") ? <motion.div key={"inProgress"} style={{height: "100%"}}
-                                                              initial={{opacity: 0}} animate={{opacity: 1}}
-                                                              exit={{opacity: 0}}>
-        <InProgress onCancel={() => stop_scan()}/>
-      </motion.div> : <motion.div key={"review"} style={{height: "100%"}}
-                                  initial={{
-                                    x: 50,
-                                    opacity: 0
-                                  }}
-                                  animate={{
-                                    x: 0,
-                                    opacity: 1
-                                  }}
-                                  exit={{
-                                    x: 50,
-                                    opacity: 0
-                                  }}
-                                  transition={{ease: "easeOut"}}
-      >
-        <Report files={DEMO_FILES_EMPTY} onDetail={() => {
-        }}
-                onBack={() => stop_scan()}
-        />
-      </motion.div>}
+      {(scanStep === "idle") ?
+        <motion.div key={"welcome"} style={{height: "100%"}} {...fadeAnimation}>
+          <Welcome onScan={() => start_scan()}/>
+        </motion.div> :
+        (scanStep === "scanning") ?
+          <motion.div key={"inProgress"} style={{height: "100%"}} {...fadeAnimation}>
+            <InProgress onCancel={() => stop_scan()}/>
+          </motion.div> :
+          (scanDetail) ?
+            <motion.div key={"detail"} style={{height: "100%"}} {...slideFadeAnimation}>
+              <Detail data={detailData} selection={detailSelection}
+                      onBack={() => setScanDetail(false)}/>
+            </motion.div>
+            :
+            <motion.div key={"overview"} style={{height: "100%"}} {...slideFadeAnimation}>
+              <Overview
+                totalItems={totalItems} selectedItems={selectedItems}
+                onBack={() => stop_scan()} onDetail={() => setScanDetail(true)}
+              />
+            </motion.div>
+      }
     </AnimatePresence>
   </Container>)
 }
