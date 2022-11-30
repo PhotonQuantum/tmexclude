@@ -1,5 +1,5 @@
-import {MutableRefObject, useEffect, useLayoutEffect, useRef, useState} from "react";
-import {createStyles} from "@mantine/core";
+import {useEffect, useLayoutEffect, useRef, useState} from "react";
+import {createStyles, keyframes} from "@mantine/core";
 
 export const disableMenu = () => {
   if (typeof window === "undefined") {
@@ -93,3 +93,13 @@ export const useTableStyles = createStyles((theme) => ({
   },
 }))
 
+const circling = (radius: number) => keyframes({
+  "from": {transform: `rotate(0deg) translateX(${radius}px) rotate(0deg)`},
+  "to": {transform: `rotate(360deg) translateX(${radius}px) rotate(-360deg)`}
+})
+
+export const useAnimateStyles = createStyles({
+  circle: {
+    animation: `${circling(10)} 2s linear infinite`,
+  }
+})

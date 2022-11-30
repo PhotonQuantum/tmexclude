@@ -1,36 +1,24 @@
-import {atom, AtomEffect, DefaultValue, selector, selectorFamily, useRecoilValue, useSetRecoilState} from "recoil";
-import {PreConfig} from "./bindings/PreConfig";
+'use client';
+import {atom, AtomEffect, DefaultValue, selector, useRecoilValue, useSetRecoilState} from "recoil";
+import {PreConfig} from "../bindings/PreConfig";
 import _ from "lodash";
-import {PreRule} from "./bindings/PreRule";
+import {PreRule} from "../bindings/PreRule";
 import {equalSelector, equalSelectorFamily} from "./equalSelector";
-import {PreDirectory} from "./bindings/PreDirectory";
-import {ScanStatus} from "./bindings/ScanStatus";
-import {ExclusionActionBatch} from "./bindings/ExclusionActionBatch";
+import {PreDirectory} from "../bindings/PreDirectory";
+import {ScanStatus} from "../bindings/ScanStatus";
+import {ExclusionActionBatch} from "../bindings/ExclusionActionBatch";
 import {useEffect} from "react";
-import {ApplyErrors} from "./bindings/ApplyErrors";
-
-const initialFetchConfig = async () => {
-  if (typeof window === "undefined") {
-    return null;
-  }
-  const invoke = await import("@tauri-apps/api").then(tauri => tauri.invoke);
-  return await invoke<PreConfig>("get_config");
-};
+import {ApplyErrors} from "../bindings/ApplyErrors";
+import {getConfig, scanStatus, setConfig} from "./commands";
 
 const finalConfigEffect: AtomEffect<PreConfig | null> = ({
                                                            setSelf,
                                                            onSet
                                                          }) => {
   onSet((newValue) => {
-    if (typeof window === "undefined") {
-      return;
+    if (newValue !== null) {
+      setConfig(newValue);
     }
-    const f = async () => {
-      const invoke = await import("@tauri-apps/api").then(tauri => tauri.invoke);
-      // TODO fix deadlock
-      return await invoke("set_config", {config: newValue});
-    }
-    f();
   });
 
   const f = async () => {
@@ -51,7 +39,7 @@ const finalConfigEffect: AtomEffect<PreConfig | null> = ({
 
 export const finalConfigState = atom({
   key: 'finalConfig',
-  default: initialFetchConfig(),
+  default: getConfig(),
   effects: [finalConfigEffect,]
 })
 
@@ -142,7 +130,7 @@ export const perDirState = equalSelectorFamily<PreDirectory, string>({
     const dirs = get(dirsState);
     return dirs.find(dir => dir.path === dirPath)!;
   },
-  set: (dirPath: string) => ({set}, newValue) => {
+  set: (_dirPath: string) => ({set}, newValue) => {
     set(dirsState, (prev) => ((!(newValue instanceof DefaultValue) && prev !== null) ?
       prev.map((dir) => dir.path === newValue.path ? newValue : dir) :
       prev));
@@ -173,14 +161,6 @@ export const configChangedState = selector({
   }
 });
 
-const initialFetchScanStatus = async () => {
-  if (typeof window === "undefined") {
-    return {step: "idle"} as ScanStatus;
-  }
-  const invoke = await import("@tauri-apps/api").then(tauri => tauri.invoke);
-  return await invoke<ScanStatus>("scan_status");
-}
-
 const scanStatusEffect: AtomEffect<ScanStatus> = ({setSelf}) => {
   const f = async () => {
     if (typeof window === "undefined") {
@@ -200,7 +180,7 @@ const scanStatusEffect: AtomEffect<ScanStatus> = ({setSelf}) => {
 
 export const scanStatusState = atom<ScanStatus>({
   key: "scanStatus",
-  default: initialFetchScanStatus(),
+  default: scanStatus(),
   effects: [scanStatusEffect,]
 })
 
@@ -227,44 +207,20 @@ export const scanCurrentState = selector({
   }
 })
 
-const actionBatchEffect: AtomEffect<ExclusionActionBatch> = ({setSelf}) => {
-  const f = async () => {
-    if (typeof window === "undefined") {
-      return () => {
+export const actionBatchState = equalSelector({
+  key: "actionBatch",
+  get: ({get}) => {
+    const scanStatus = get(scanStatusState);
+    if (scanStatus.step === "result") {
+      return scanStatus.content;
+    } else {
+      return {
+        add: [],
+        remove: [],
       };
     }
-    const listen = await import("@tauri-apps/api/event").then(tauri => tauri.listen);
-    return await listen<ScanStatus>("scan_status_changed", ({payload}) => {
-      if (payload.step === "result") {
-        console.log("action batch", payload.content);
-        setSelf(payload.content);
-      }
-    });
-  }
-  const unlisten = f();
-  return () => {
-    unlisten.then(unlisten => unlisten());
-  }
-};
-
-const fetchActionBatch = async () => {
-  const defaultValue = {
-    add: [],
-    remove: [],
-  };
-  if (typeof window === "undefined") {
-    return defaultValue;
-  }
-  const invoke = await import("@tauri-apps/api").then(tauri => tauri.invoke);
-  const scan_status = await invoke<ScanStatus>("scan_status");
-  return scan_status.step === "result" ? scan_status.content : defaultValue;
-};
-
-
-export const actionBatchState = atom({
-  key: 'actionBatch',
-  default: fetchActionBatch(),
-  effects: [actionBatchEffect,]
+  },
+  equals: _.isEqual
 })
 
 export const selectedActionBatchState = atom<ExclusionActionBatch>({

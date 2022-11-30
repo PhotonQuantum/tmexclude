@@ -1,11 +1,11 @@
-import {getMainLayout} from "../../components/mainLayout";
+'use client';
 import {Accordion, Box, Button, Container, Group, Popover, ScrollArea, Stack, Text, TextInput} from "@mantine/core";
 import {IconPlus, IconTemplate} from "@tabler/icons";
 import {useRecoilValue, useSetRecoilState} from "recoil";
 import {allPathsState, ruleNamesState, rulesState} from "../../states";
-import {RuleItem} from "../../components/ruleItem";
 import {useState} from "react";
 import {useElementSize} from "@mantine/hooks";
+import {RuleItem} from "./RuleItem";
 
 const AddButton = () => {
   const [addPop, setAddPop] = useState(false);
@@ -59,7 +59,7 @@ const AddButton = () => {
   </Popover>)
 }
 
-const Rules = () => {
+export const Rules = () => {
   const ruleNames = useRecoilValue(ruleNamesState);
   const rules = useRecoilValue(rulesState);
   const allPaths = useRecoilValue(allPathsState);
@@ -101,7 +101,3 @@ const Rules = () => {
     </Stack>
   </Container>)
 }
-
-Rules.getLayout = getMainLayout;
-
-export default Rules;

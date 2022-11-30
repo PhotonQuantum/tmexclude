@@ -8,10 +8,14 @@ const nextConfig = {
     },
     webpack: (config) => {
         config.experiments = {
-            topLevelAwait: true
+            topLevelAwait: true,
+            layers: true
         }
         return config
-    }
+    },
+    experimental: {
+        appDir: true,
+    },
 };
 
 module.exports = nextConfig;

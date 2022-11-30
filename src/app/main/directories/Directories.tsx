@@ -1,6 +1,16 @@
-import {getMainLayout} from "../../components/mainLayout";
+'use client';
 import {
-  Badge, Box, Button, Container, createStyles, MultiSelect, Popover, ScrollArea, Stack, Table, Text
+  Badge,
+  Box,
+  Button,
+  Container,
+  createStyles,
+  MultiSelect,
+  Popover,
+  ScrollArea,
+  Stack,
+  Table,
+  Text
 } from "@mantine/core";
 import {IconMinus, IconPlus} from "@tabler/icons";
 import React, {useState} from "react";
@@ -9,7 +19,7 @@ import {dirsState, perDirState, ruleNamesState, skipsState} from "../../states";
 import {open} from "@tauri-apps/api/dialog";
 import _ from "lodash";
 import {createScopedKeydownHandler} from "@mantine/utils";
-import {PathText} from "../../components/pathText";
+import {PathText} from "../PathText";
 
 const buttonStyles = {
   root: {paddingRight: 7},
@@ -204,7 +214,7 @@ const SkippedDirs = () => {
   </>)
 }
 
-const Directories = () => {
+export const Directories = () => {
   return (<Container sx={{height: "100%"}}>
     <Stack py={"xl"} spacing={"xs"} sx={{height: "100%"}}>
       <WatchedDir/>
@@ -212,7 +222,3 @@ const Directories = () => {
     </Stack>
   </Container>)
 }
-
-Directories.getLayout = getMainLayout;
-
-export default Directories;
