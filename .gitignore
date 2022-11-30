@@ -4,6 +4,6 @@
 /dist
 /release
 
-next-env.d.ts
 /.next
 /.vscode
+/.parcel-cache

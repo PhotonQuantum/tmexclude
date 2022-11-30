@@ -3,8 +3,8 @@
   "source": "src/index.html",
   "version": "0.2.0",
   "scripts": {
-    "dev": "next dev -p 1420",
-    "build": "next build && next export -o dist",
+    "dev": "parcel serve src/index.html -p 1420",
+    "build": "parcel build src/index.html",
     "tauri": "tauri"
   },
   "dependencies": {
@@ -13,17 +13,16 @@
     "@emotion/styled": "^11.10.5",
     "@mantine/core": "^5.8.4",
     "@mantine/hooks": "^5.8.4",
-    "@mantine/next": "^5.8.4",
     "@mantine/notifications": "^5.8.4",
     "@mantine/utils": "^5.8.4",
     "@tabler/icons": "^1.114.0",
     "@tauri-apps/api": "^1.2.0",
     "framer-motion": "^7.6.15",
     "lodash": "^4.17.21",
-    "next": "^13.0.5",
     "process": "^0.11.10",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-router-dom": "^6.4.3",
     "react-timeago": "^7.1.0",
     "recoil": "^0.7.6",
     "swr": "^1.3.0"
@@ -34,8 +33,9 @@
     "@types/node": "^18.11.9",
     "@types/react": "^18.0.25",
     "@types/react-dom": "^18.0.9",
+    "@types/react-router-dom": "^5.3.3",
     "@types/react-timeago": "^4.1.3",
-    "@welldone-software/why-did-you-render": "^7.0.1",
+    "parcel": "^2.8.0",
     "typescript": "^4.9.3"
   }
 }
