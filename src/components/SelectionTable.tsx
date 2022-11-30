@@ -1,19 +1,25 @@
 'use client';
-import {Checkbox, ScrollArea, Stack, StackProps, Table, TextInput} from "@mantine/core";
-import React, {useMemo, useState} from "react";
+import {Checkbox, packSx, ScrollArea, ScrollAreaProps, Sx, Table, TextInput} from "@mantine/core";
+import React, {useEffect, useMemo, useState} from "react";
 import {PathText} from "./PathText";
 import {useTableStyles} from "../utils";
 
-export interface SelectionTableProps extends Omit<StackProps, "onChange"> {
+export interface SelectionTableProps extends Omit<ScrollAreaProps, "onChange"> {
   data: Array<string>,
+  limit: number,
   selection: Array<string>,
-  onChange: React.Dispatch<React.SetStateAction<Array<string>>>
+  onTruncated: (c: number | null) => void,
+  sx?: Sx | Sx[],
+  onChange: React.Dispatch<React.SetStateAction<Array<string>>>,
 }
 
 export const SelectionTable = React.memo(({
                                             data,
                                             selection,
+                                            limit,
+                                            onTruncated,
                                             onChange,
+                                            sx,
                                             ...props
                                           }: SelectionTableProps) => {
   const {classes, cx} = useTableStyles();
@@ -29,10 +35,14 @@ export const SelectionTable = React.memo(({
   const [filter, setFilter] = useState("");
   const filtered = data.filter(i => i.toLowerCase().includes(filter.toLowerCase()));
 
-  return (<Stack {...props}>
-    <ScrollArea sx={{height: "100%"}}>
-      <Table>
-        <thead className={cx(classes.stickyHeader)}>
+  useEffect(() => {
+    onTruncated(filtered.length > limit ? filtered.length : null);
+  }, [filtered, limit]);
+
+  return (
+    <ScrollArea sx={[{height: "100%"}, ...packSx(sx)]} styles={{scrollbar: {zIndex: 20}}} {...props}>
+      <Table sx={{tableLayout: "fixed"}}>
+        <thead className={cx(classes.stickyHeader)} style={{zIndex: 10}}>
         <tr>
           <th style={{width: 40}}>
             <Checkbox
@@ -53,14 +63,14 @@ export const SelectionTable = React.memo(({
         </tr>
         </thead>
         <tbody>
-        {filtered.map(item => {
+        {filtered.slice(0, limit).map(item => {
           const selected = selection.includes(item);
           return (<SelectionRow key={item} selected={selected} item={item} onToggle={toggle}/>)
         })}
         </tbody>
       </Table>
     </ScrollArea>
-  </Stack>)
+  )
 });
 
 type SelectionRowProps = {
@@ -80,7 +90,7 @@ const SelectionRow = React.memo(({selected, item, onToggle}: SelectionRowProps) 
                   checked={selected} onChange={() => onToggle(item)} transitionDuration={0}/>
       </td>
       <td>
-        <PathText keepFirst={4} keepLast={2} path={item} lineClamp={1}/>
+        <PathText keepFirst={4} keepLast={2} path={item} lineClamp={1} withinPortal/>
       </td>
     </tr>
   );
