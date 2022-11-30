@@ -1,9 +1,10 @@
+'use client';
 import {Accordion, ActionIcon, Group, Menu, MultiSelect, SegmentedControl, Stack, Text, TextInput} from "@mantine/core";
 import {IconDots, IconPencil, IconTrash} from "@tabler/icons";
 import {useSetRecoilState} from "recoil";
-import {perRuleState, rulesState} from "../states";
+import {perRuleState, rulesState} from "../../states";
 import React, {useState} from "react";
-import {PreRule} from "../bindings/PreRule";
+import {PreRule} from "../../../bindings/PreRule";
 import _ from "lodash";
 
 type RuleItemProps = {

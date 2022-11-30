@@ -1,5 +1,6 @@
+'use client';
 import {Text, TextProps, Tooltip} from "@mantine/core";
-import {useIsOverflow, useTruncatedPath} from "../utils";
+import {useIsOverflow, useTruncatedPath} from "../../utils";
 import {useMergedRef} from "@mantine/hooks";
 
 export interface PathTextProps extends TextProps {

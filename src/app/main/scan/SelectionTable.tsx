@@ -1,7 +1,8 @@
-import {Checkbox, createStyles, ScrollArea, Stack, StackProps, Table, TextInput} from "@mantine/core";
+'use client';
+import {Checkbox, ScrollArea, Stack, StackProps, Table, TextInput} from "@mantine/core";
 import React, {useMemo, useState} from "react";
-import {PathText} from "./pathText";
-import {useTableStyles} from "../utils";
+import {PathText} from "../PathText";
+import {useTableStyles} from "../../../utils";
 
 export interface SelectionTableProps extends Omit<StackProps, "onChange"> {
   data: Array<string>,
@@ -69,6 +70,7 @@ type SelectionRowProps = {
 }
 
 const SelectionRow = React.memo(({selected, item, onToggle}: SelectionRowProps) => {
+  console.log("SelectionRow", item);
   const {classes, cx} = useTableStyles();
 
   return (

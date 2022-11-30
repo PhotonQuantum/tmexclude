@@ -1,39 +1,16 @@
-import type {AppProps} from "next/app";
-
+'use client';
 import {MantineProvider} from "@mantine/core";
-import Head from "next/head";
-import {useColorScheme} from "@mantine/hooks";
-import {ReactElement, ReactNode} from "react";
-import {NextPage} from "next";
-import {SWRConfig} from "swr";
-import {disableMenu} from "../utils";
 import {RecoilRoot} from "recoil";
-import {SyncActionBatch} from "../states";
+import {SyncActionBatch} from "./states";
+import {SWRConfig} from "swr";
+import {useColorScheme} from "@mantine/hooks";
+import {disableMenu} from "../utils";
+import {ReactNode} from "react";
 
-export type NextPageWithLayout<P = {}, IP = P> = NextPage<P, IP> & {
-  getLayout?: (page: ReactElement) => ReactNode
-}
-
-type AppPropsWithLayout = AppProps & {
-  Component: NextPageWithLayout
-}
-
-// This default export is required in a new `pages/_app.js` file.
-export default function MyApp({
-                                Component,
-                                pageProps
-                              }: AppPropsWithLayout) {
+export const Providers = ({children}: { children: ReactNode }) => {
   const preferredColorScheme = useColorScheme();
-  const getLayout = Component.getLayout ?? ((page) => page);
-
   disableMenu();
-
-  return (<>
-    <Head>
-      <title>tmexclude</title>
-      <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width"/>
-    </Head>
-
+  return (
     <SWRConfig
       value={{
         refreshInterval: 5000,
@@ -90,10 +67,10 @@ export default function MyApp({
         }}
       >
         <RecoilRoot>
-          <SyncActionBatch />
-          {getLayout(<Component {...pageProps} />)}
+          <SyncActionBatch/>
+          {children}
         </RecoilRoot>
       </MantineProvider>
     </SWRConfig>
-  </>)
+  )
 }
