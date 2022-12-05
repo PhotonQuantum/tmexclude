@@ -3,14 +3,10 @@ import {Box, Navbar, NavLink, Text} from "@mantine/core";
 import {Fragment} from "react";
 import {routes} from "./routes";
 import {Link, useLocation} from "react-router-dom";
+import { evDrag } from "../../utils";
 
 export const NavBar = () => {
   const location = useLocation();
-  const evDrag = async (ev: { preventDefault: () => void; }) => {
-    const {appWindow} = await import("@tauri-apps/api/window");
-    ev.preventDefault();
-    await appWindow.startDragging();
-  };
 
   return (
     <Navbar width={{base: 250}} height={600} p="xs"

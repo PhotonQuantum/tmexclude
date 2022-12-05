@@ -21,9 +21,11 @@ use tmexclude_lib::{
 };
 
 use crate::decorations::WindowExt;
+use crate::metadata::build_meta;
 use crate::plugins::{BackgroundPlugin, EnvironmentPlugin};
 
 mod decorations;
+mod metadata;
 mod plugins;
 mod utils;
 
@@ -120,7 +122,8 @@ fn main() {
             scan_status,
             start_full_scan,
             stop_full_scan,
-            apply_action_batch
+            apply_action_batch,
+            build_meta
         ])
         .setup(move |app| {
             // TODO circular dependency?
@@ -135,7 +138,6 @@ fn main() {
                 None,
             )
             .expect("unable to apply vibrancy");
-            main_window.set_transparent_titlebar();
             main_window.set_trafficlights_position(20., 20.);
             app.set_activation_policy(ActivationPolicy::Accessory);
             Ok(())

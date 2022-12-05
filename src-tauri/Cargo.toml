@@ -20,12 +20,13 @@ path = "src/lib/lib.rs"
 
 [build-dependencies]
 tauri-build = { version = "1.0.0", features = [] }
+vergen = "7.4"
 
 [dependencies]
 fsevent-stream = "0.2"
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive", "rc"] }
-tauri = { version = "1.0.0", features = ["dialog-open", "macos-private-api", "path-all", "system-tray", "window-start-dragging"] }
+tauri = { version = "1.0.0", features = ["dialog-open", "macos-private-api", "path-all", "shell-open", "system-tray", "window-show", "window-start-dragging"] }
 itertools = "0.10"
 parking_lot = "0.12"
 maplit = "1.0"

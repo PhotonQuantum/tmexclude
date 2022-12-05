@@ -12,13 +12,17 @@
   "tauri": {
     "allowlist": {
       "window": {
-        "startDragging": true
+        "startDragging": true,
+        "show": true
       },
       "dialog": {
         "open": true
       },
       "path": {
         "all": true
+      },
+      "shell": {
+        "open": "^https?://(twitter.com|github.com|gitlab.com)"
       }
     },
     "systemTray": {
@@ -74,17 +78,33 @@
         "visible": false,
         "height": 600,
         "width": 800,
-        "transparent": true
+        "transparent": true,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true
       },
       {
         "label": "about",
-        "title": "",
+        "title": "About",
         "url": "/about",
         "fullscreen": false,
+        "center": true,
         "resizable": false,
         "visible": false,
-        "height": 600,
-        "width": 800
+        "height": 250,
+        "width": 400,
+        "hiddenTitle": true,
+        "titleBarStyle": "Overlay"
+      },
+      {
+        "label": "ack",
+        "title": "Acknowledgements",
+        "url": "/ack",
+        "fullscreen": false,
+        "center": true,
+        "resizable": false,
+        "visible": false,
+        "height": 400,
+        "width": 600
       }
     ],
     "macOSPrivateApi": true

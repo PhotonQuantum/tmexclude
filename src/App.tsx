@@ -11,33 +11,45 @@ import {Directories} from "./pages/main/Directories";
 import {General} from "./pages/main/General";
 import {Scan} from "./pages/main/Scan";
 import {Rules} from "./pages/main/Rules";
+import {About} from "./pages/About";
+import {Ack} from "./pages/Ack";
 
-const router = createBrowserRouter([{
-  path: "main",
-  element: <MainLayout/>,
-  children: [
-    {
-      path: "stats",
-      element: <Stats/>
-    },
-    {
-      path: "directories",
-      element: <Directories/>
-    },
-    {
-      path: "general",
-      element: <General/>
-    },
-    {
-      path: "rules",
-      element: <Rules/>
-    },
-    {
-      path: "scan",
-      element: <Scan/>,
-    }
-  ]
-}]);
+const router = createBrowserRouter([
+  {
+    path: "main",
+    element: <MainLayout/>,
+    children: [
+      {
+        path: "stats",
+        element: <Stats/>
+      },
+      {
+        path: "directories",
+        element: <Directories/>
+      },
+      {
+        path: "general",
+        element: <General/>
+      },
+      {
+        path: "rules",
+        element: <Rules/>
+      },
+      {
+        path: "scan",
+        element: <Scan/>,
+      },
+    ]
+  },
+  {
+    path: "about",
+    element: <About/>
+  },
+  {
+    path: "ack",
+    element: <Ack/>
+  }
+]);
 
 export const App = () => {
   const preferredColorScheme = useColorScheme();
