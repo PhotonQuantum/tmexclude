@@ -1,5 +1,3 @@
-'use client';
-import {useTheme} from "@emotion/react";
 import {useTableStyles} from "../../../utils";
 import {useRecoilValue, useSetRecoilState} from "recoil";
 import {
@@ -9,7 +7,7 @@ import {
   selectedRemoveActionBatchState
 } from "../../../states";
 import React, {useState} from "react";
-import {Box, Button, Group, Modal, ScrollArea, Stack, Table, Text, ThemeIcon} from "@mantine/core";
+import {Box, Button, Group, Modal, ScrollArea, Stack, Table, Text, ThemeIcon, useMantineTheme} from "@mantine/core";
 import {IconAlertTriangle, IconChevronLeft, IconCircleCheck, IconHomeCheck, IconHomeExclamation} from "@tabler/icons";
 import {motion} from "framer-motion";
 import {fadeAnimation} from "../../../transitions";
@@ -18,7 +16,7 @@ import {PathText} from "../../../components/PathText";
 import {stopFullScan} from "../../../commands";
 
 export const Done = React.forwardRef(() => {
-  const theme = useTheme();
+  const theme = useMantineTheme();
   const {classes, cx} = useTableStyles();
 
   const applyErrors = useRecoilValue(applyErrorsState);
