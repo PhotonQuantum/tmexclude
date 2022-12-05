@@ -115,6 +115,7 @@ fn main() {
         })
         .plugin(BackgroundPlugin)
         .plugin(EnvironmentPlugin)
+        .plugin(plugins::auto_launch::init())
         .invoke_handler(tauri::generate_handler![
             metrics,
             get_config,

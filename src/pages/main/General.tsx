@@ -1,13 +1,18 @@
 'use client';
 import {Box, Checkbox, Container, Group, Select, Stack, Text} from "@mantine/core";
 import {useRecoilState} from "recoil";
-import {noIncludeState} from "../../states";
+import {autoStartState, noIncludeState} from "../../states";
 
 export const General = () => {
   const [noInclude, setNoInclude] = useRecoilState(noIncludeState);
+  const [autoStart, setAutoStart] = useRecoilState(autoStartState);
   return (<Container>
     <Stack py={"xl"}>
-      <Checkbox size={"sm"} label={<Text size={"md"}>Start at Login</Text>}/>
+      <Checkbox size={"sm"} label={<Text size={"md"}>Start at Login</Text>}
+                checked={autoStart} onChange={(ev) => {
+        console.log("autoStart", ev.target.checked);
+        setAutoStart(ev.currentTarget.checked);
+      }}/>
       <Group>
         <Text>Language: </Text>
         <Select

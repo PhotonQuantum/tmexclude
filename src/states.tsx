@@ -9,7 +9,7 @@ import {ScanStatus} from "./bindings/ScanStatus";
 import {ExclusionActionBatch} from "./bindings/ExclusionActionBatch";
 import {useEffect} from "react";
 import {ApplyErrors} from "./bindings/ApplyErrors";
-import {getConfig, scanStatus, setConfig} from "./commands";
+import {disableAutoStart, enableAutoStart, getAutoStart, getConfig, scanStatus, setConfig} from "./commands";
 
 const finalConfigEffect: AtomEffect<PreConfig | null> = ({
                                                            setSelf,
@@ -281,7 +281,29 @@ export const scanPageState = atom<ScanPage>({
   default: "scan"
 });
 
-export const applyErrorsState = atom<ApplyErrors|null>({
+export const applyErrorsState = atom<ApplyErrors | null>({
   key: "applyErrors",
   default: null,
 });
+
+const autoStartEffect: AtomEffect<boolean> = ({onSet, setSelf}) => {
+  onSet((newValue) => {
+    console.log("autoStartEffect", newValue);
+    const f = async () => {
+      console.log("autoStartEffect(inner)", newValue);
+      if (newValue) {
+        console.log(await enableAutoStart());
+      } else {
+        console.log(await disableAutoStart());
+      }
+      setSelf(await getAutoStart());
+    };
+    f();
+  });
+};
+
+export const autoStartState = atom<boolean>({
+  key: "autoStart",
+  default: getAutoStart(),
+  effects: [autoStartEffect,]
+})

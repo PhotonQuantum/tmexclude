@@ -13,6 +13,18 @@ const invoke = async <T>(cmd: string, args?: InvokeArgs) => {
   return await _invoke<T>(cmd, args);
 };
 
+export const enableAutoStart = async () => {
+  return await invoke<void>('plugin:auto_launch|enable')
+}
+
+export const disableAutoStart = async () => {
+  return await invoke<void>('plugin:auto_launch|disable')
+}
+
+export const getAutoStart = async () => {
+  return await invoke<boolean>('plugin:auto_launch|is_enabled') ?? false;
+}
+
 export const getConfig = async () => {
   return await invoke<PreConfig>("get_config");
 }
