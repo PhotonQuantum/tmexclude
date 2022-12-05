@@ -40,3 +40,67 @@ impl Plugin<Wry> for BackgroundPlugin {
         }
     }
 }
+
+pub mod auto_launch {
+    use std::ptr;
+
+    use cocoa::base::id;
+    use cocoa::foundation::NSInteger;
+    use objc::runtime::{BOOL, NO};
+    use tauri::plugin::{Builder, TauriPlugin};
+    use tauri::{Manager, Runtime, State};
+
+    pub fn init<R: Runtime>() -> TauriPlugin<R> {
+        Builder::new("auto_launch")
+            .invoke_handler(tauri::generate_handler![enable, disable, is_enabled])
+            .setup(move |app| {
+                let manager = LaunchManager;
+                app.manage(manager);
+                Ok(())
+            })
+            .build()
+    }
+
+    #[tauri::command]
+    async fn enable(manager: State<'_, LaunchManager>) -> Result<(), ()> {
+        manager.enable();
+        Ok(())
+    }
+
+    #[tauri::command]
+    async fn disable(manager: State<'_, LaunchManager>) -> Result<(), ()> {
+        manager.disable();
+        Ok(())
+    }
+
+    #[tauri::command]
+    async fn is_enabled(manager: State<'_, LaunchManager>) -> Result<bool, ()> {
+        Ok(manager.is_enabled())
+    }
+
+    struct LaunchManager;
+
+    impl LaunchManager {
+        fn enable(&self) -> bool {
+            let service: id = unsafe { msg_send![class!(SMAppService), mainAppService] };
+            let result: BOOL =
+                unsafe { msg_send![service, registerAndReturnError: ptr::null_mut::<id>()] };
+            !matches!(result, NO)
+        }
+        fn disable(&self) -> bool {
+            let service: id = unsafe { msg_send![class!(SMAppService), mainAppService] };
+            let result: BOOL =
+                unsafe { msg_send![service, unregisterAndReturnError: ptr::null_mut::<id>()] };
+            !matches!(result, NO)
+        }
+        fn is_enabled(&self) -> bool {
+            let service: id = unsafe { msg_send![class!(SMAppService), mainAppService] };
+            let status: NSInteger = unsafe { msg_send![service, status] };
+            dbg!(status) == SMAppServiceStatusEnabled
+        }
+    }
+
+    //noinspection RsConstNaming
+    #[allow(non_upper_case_globals)]
+    const SMAppServiceStatusEnabled: NSInteger = 1;
+}
