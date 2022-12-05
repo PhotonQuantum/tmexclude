@@ -4,18 +4,13 @@ import {configChangedState, draftConfigState, finalConfigState} from "../../stat
 import {Box, Button, Group, Header, Text} from "@mantine/core";
 import {IconAdjustments} from "@tabler/icons";
 import React from "react";
+import { evDrag } from "../../utils";
 
 export const MainHeader = React.forwardRef<HTMLElement>((props, ref) => {
   const changed = useRecoilValue(configChangedState);
   const resetDraft = useResetRecoilState(draftConfigState);
   const draftConfig = useRecoilValue(draftConfigState);
   const setFinalConfig = useSetRecoilState(finalConfigState);
-
-  const evDrag = async (ev: { preventDefault: () => void; }) => {
-    const {appWindow} = await import("@tauri-apps/api/window");
-    ev.preventDefault();
-    await appWindow.startDragging();
-  };
 
   return (
     <Header ref={ref} height={55} p="xs"

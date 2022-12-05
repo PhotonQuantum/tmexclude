@@ -103,3 +103,14 @@ export const useAnimateStyles = createStyles({
     animation: `${circling(10)} 2s linear infinite`,
   }
 })
+
+export const swrFetcher = async (key: string) => {
+  const invoke = await import("@tauri-apps/api").then(tauri => tauri.invoke);
+  return await invoke<any>(key);
+}
+
+export const evDrag = async (ev: { preventDefault: () => void; }) => {
+  const {appWindow} = await import("@tauri-apps/api/window");
+  ev.preventDefault();
+  await appWindow.startDragging();
+};

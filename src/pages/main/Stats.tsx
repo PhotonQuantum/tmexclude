@@ -5,14 +5,10 @@ import useSWR from 'swr'
 import {Metrics} from "../../bindings/Metrics";
 import ReactTimeago from "react-timeago";
 import {PathText} from "../../components/PathText";
-
-const fetcher = async (key: string) => {
-  const invoke = await import("@tauri-apps/api").then(tauri => tauri.invoke);
-  return await invoke<any>(key);
-}
+import {swrFetcher} from "../../utils";
 
 export const Stats = () => {
-  const {data} = useSWR<Metrics>("metrics", fetcher);
+  const {data} = useSWR<Metrics>("metrics", swrFetcher);
   return (<Container>
     <Stack py={"xl"}>
       <Box pl={"xl"} pb={"xl"}>
