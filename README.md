@@ -48,10 +48,6 @@ however.
 
 > WIP
 
-## Acknowledgements
-
-<a href="https://www.flaticon.com/free-icons/harddisk" title="harddisk icons">Harddisk icons created by Smashicons - Flaticon</a>
-
 ## License
 
-This project is licensed under [MIT License](LICENSE).
+This project is licensed under [MIT License](LICENSE.txt).
