@@ -6,7 +6,7 @@
     "distDir": "../dist"
   },
   "package": {
-    "productName": "tmexclude",
+    "productName": "TimeMachine Exclude",
     "version": "0.2.0"
   },
   "tauri": {
