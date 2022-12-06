@@ -38,7 +38,7 @@ eyre = "0.6"
 xattr = "1.0"
 jwalk = "0.6"
 serde_yaml = "0.9"
-shellexpand = "2.1"
+shellexpand = "3.0"
 futures = "0.3"
 moka = "0.9"
 core-foundation = { version = "0.9", features = ["mac_os_10_8_features"] }
