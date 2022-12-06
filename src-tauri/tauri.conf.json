@@ -95,8 +95,8 @@
         "center": true,
         "resizable": false,
         "visible": false,
-        "height": 250,
-        "width": 400,
+        "height": 300,
+        "width": 430,
         "hiddenTitle": true,
         "titleBarStyle": "Overlay"
       },
@@ -104,6 +104,17 @@
         "label": "ack",
         "title": "Acknowledgements",
         "url": "/ack",
+        "fullscreen": false,
+        "center": true,
+        "resizable": false,
+        "visible": false,
+        "height": 400,
+        "width": 600
+      },
+      {
+        "label": "license",
+        "title": "License",
+        "url": "/license",
         "fullscreen": false,
         "center": true,
         "resizable": false,

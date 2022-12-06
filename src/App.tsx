@@ -13,6 +13,7 @@ import {Scan} from "./pages/main/Scan";
 import {Rules} from "./pages/main/Rules";
 import {About} from "./pages/About";
 import {Ack} from "./pages/Ack";
+import {License} from "./pages/License";
 
 const router = createBrowserRouter([
   {
@@ -48,6 +49,10 @@ const router = createBrowserRouter([
   {
     path: "ack",
     element: <Ack/>
+  },
+  {
+    path: "license",
+    element: <License/>
   }
 ]);
 

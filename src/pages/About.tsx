@@ -17,6 +17,12 @@ export const About = () => {
     await target.show();
   }
 
+  const openLicense = async () => {
+    const WebviewWindow = await import("@tauri-apps/api/window").then(window => window.WebviewWindow);
+    const target = WebviewWindow.getByLabel("license")!;
+    await target.show();
+  }
+
   const A = (props: { href: string, children: React.ReactNode }) => (
     <Text inline sx={{cursor: "pointer"}} c={"blue"} component={"a"} target={"_blank"} {...props}/>
   )
@@ -32,6 +38,12 @@ export const About = () => {
               <Text size={"xs"}>Build {data?.version ?? "unknown"}, built on {dateString}</Text>
             </Stack>
             <Divider/>
+            <Text size={"xs"}>
+              Github: <A href={"https://github.com/PhotonQuantum/tmexclude"}>
+              https://github.com/PhotonQuantum/tmexclude
+            </A>
+            </Text>
+            <Divider/>
             <Title order={6}>Contact Me</Title>
             <Text size={"xs"}>
               Github - <A href={"https://github.com/PhotonQuantum"}>@PhotonQuantum</A><br/>
@@ -39,6 +51,8 @@ export const About = () => {
             </Text>
             <Divider/>
             <Text size={"xs"}>
+              Licensed under <Text span inline sx={{cursor: "pointer"}} c={"blue"}
+                                   onClick={openLicense}>MIT License</Text><br/>
               Powered by <Text span inline sx={{cursor: "pointer"}} c={"blue"}
                                onClick={openAck}>open-source software</Text><br/>
               Copyright © {buildYear} <A href={"https://github.com/PhotonQuantum"}>LightQuantum</A>
