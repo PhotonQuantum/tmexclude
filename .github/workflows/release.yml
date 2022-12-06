@@ -5,42 +5,54 @@ on:
 name: Release
 jobs:
   release:
-    name: Release
-    runs-on: macos-latest
+    runs-on: macos-12
     steps:
-      - uses: actions/checkout@v2
-        name: Checkout 🛎️
+      - uses: actions/checkout@v3
+      - name: setup node
+        uses: actions/setup-node@v3
         with:
-          fetch-depth: 0
-      - uses: actions-rs/toolchain@v1
-        name: Setup Cargo Toolchain 🛎️
+          node-version: 18
+      - uses: pnpm/action-setup@v2
+        name: Install pnpm
+        id: pnpm-install
         with:
-          target: aarch64-apple-darwin
-          toolchain: stable
-          profile: minimal
-          override: true
-      - uses: Swatinem/rust-cache@v1
-      - run: cargo xtask release
-        name: Build release 🚀
-      - uses: jimschubert/query-tag-action@v1
-        name: Find Tag 🔍
-        id: tag
+          version: 7
+          run_install: false
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+      - uses: actions/cache@v3
+        name: Setup pnpm cache
         with:
-          skip-unshallow: true
-      - uses: softprops/action-gh-release@master
-        name: Upload release 🚀
-        id: release
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-release-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-release-
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
         with:
-          prerelease: ${{ contains(steps.tag.outputs.tag, '-') }}
-          files: |
-            release/*.rb
-            release/*.tar.gz
-      - name: Update tap
-        run: >
-          curl -XPOST -u "PhotonQuantum:${{ secrets.GH_TOKEN }}"
-          -H "Accept: application/vnd.github.v3+json" -H "Content-Type: application/json"
-          https://api.github.com/repos/PhotonQuantum/homebrew-tap/actions/workflows/update.yml/dispatches 
-          -d '{"ref": "master", "inputs":
-          {"formula": "tmexclude",
-          "file_url": "${{ fromJSON(steps.release.outputs.assets)[0].browser_download_url }}",
-          "version": "${{ steps.tag.outputs.tag }}"}}'
+          targets: aarch64-apple-darwin
+      - name: install app dependencies and build it
+        run: pnpm i && pnpm build
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - uses: tauri-apps/tauri-action@dev
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ENABLE_CODE_SIGNING: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+        with:
+          tagName: v__VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version
+          releaseName: 'v__VERSION__'
+          releaseBody: 'See the assets to download this version and install.'
+          releaseDraft: true
+          prerelease: false
+          args: --target universal-apple-darwin
