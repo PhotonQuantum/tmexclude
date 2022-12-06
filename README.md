@@ -1,5 +1,7 @@
 # TimeMachine Exclude (tmexclude)
 
+[CHANGELOG](./CHANGELOG.md)
+
 Exclude undesired files (node_modules, target, etc) from your TimeMachine backup.
 
 This utility watches your filesystem and excludes the files once they appear, so you won't accidentally include them
@@ -11,42 +13,23 @@ Screenshots available [here](#screenshots).
 
 ## Installation
 
-### Homebrew
-
-```shell
-$ brew install PhotonQuantum/tap/tmexclude
-```
+Binary releases are available [here](https://github.com/PhotonQuantum/tmexclude/releases).
 
 ## Configuration
 
-You may customize the rules and directories to scan by editing the config file.
+While you may configure tmexclude through the GUI, you may also use a configuration file.
 
 See [`config.example.yaml`](config.example.yaml) for an example configuration file.
 
 The config file is located at `~/.config/tmexclude.yaml`.
-A default config is generated when the daemon starts or a full scan is performed if the config file is missing.
+A default config is generated when the application starts if it doesn't exist.
 
-You may test your new configuration by running `tmexclude scan -d`, which will perform a dry run.
-
-After you are satisfied with the configuration, you may take it into effect by running `tmexclude reload`.
-
-## Known Issues
-
-### Repeated permission request dialogs
-
-If you include any of your Desktop, Documents or Downloads directories in the scan path and don't skip them,
-you will be asked to grant access to these folders.
-Unfortunately, macOS won't remember your choice, and will keep popping dialogs.
-
-I have no idea how to let macOS remember the choice, so I added those personal directories to the `skips` list of the
-default config. If you don't need the `daemon` mode, feel free to remove them.
-
-It's possible that the annoying dialogs may go away once you grant `tmexclude` full disk access. I've never tested it,
-however.
+After modifying the config file manually, you must restart the application for the changes to take effect.
 
 ## Screenshots
 
-> WIP
+![overview_page](./doc/screenshot1.jpeg)
+![scan_page](./doc/screenshot2.jpeg)
 
 ## License
 
