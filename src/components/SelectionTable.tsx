@@ -80,7 +80,6 @@ type SelectionRowProps = {
 }
 
 const SelectionRow = React.memo(({selected, item, onToggle}: SelectionRowProps) => {
-  console.log("SelectionRow", item);
   const {classes, cx} = useTableStyles();
 
   return (

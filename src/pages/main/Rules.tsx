@@ -63,7 +63,6 @@ export const Rules = () => {
   const ruleNames = useRecoilValue(ruleNamesState);
   const rules = useRecoilValue(rulesState);
   const allPaths = useRecoilValue(allPathsState);
-  console.log("rules rerender", ruleNames);
   return (<Container sx={{height: "100%"}}>
     <Stack py={"xl"} sx={{height: "100%"}}>
       <Group sx={{flexWrap: "nowrap"}}>

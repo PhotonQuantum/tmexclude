@@ -63,7 +63,6 @@ const WatchedDirItem = React.memo(({
              siblingSelector: "tr",
              orientation: "vertical",
              onKeyDown: (e) => {
-               console.log("tr", e.key);
                if (e.key === "Enter" || e.key == " ") {
                  setPopOverOpened(true);
                }
@@ -187,7 +186,6 @@ const SkippedDirs = () => {
                                            siblingSelector: "tr",
                                            orientation: "vertical",
                                            onKeyDown: (e) => {
-                                             console.log("tr", e.key);
                                              if (e.key === "Enter" || e.key == " ") {
                                                setSelected(idx);
                                              }

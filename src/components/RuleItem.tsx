@@ -17,7 +17,6 @@ export const RuleItem = React.memo(({
                                       allPaths,
                                       ruleNames
                                     }: RuleItemProps) => {
-  console.log("rule item rerender", name);
   const setRules = useSetRecoilState(rulesState);
   const setValue = useSetRecoilState(perRuleState(name));
   const [renaming, setRenaming] = useState(false);

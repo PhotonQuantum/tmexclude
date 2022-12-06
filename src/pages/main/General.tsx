@@ -10,7 +10,6 @@ export const General = () => {
     <Stack py={"xl"}>
       <Checkbox size={"sm"} label={<Text size={"md"}>Start at Login</Text>}
                 checked={autoStart} onChange={(ev) => {
-        console.log("autoStart", ev.target.checked);
         setAutoStart(ev.currentTarget.checked);
       }}/>
       <Box/>
@@ -18,7 +17,6 @@ export const General = () => {
         checked={noInclude}
         size={"sm"}
         onChange={() => {
-          console.log("change");
           setNoInclude(!noInclude);
         }}
         label={<>

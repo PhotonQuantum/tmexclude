@@ -42,7 +42,6 @@ fn get_config(mission: tauri::State<Arc<Mission>>) -> Arc<PreConfig> {
 #[tauri::command]
 fn set_config(mission: tauri::State<Arc<Mission>>, config: PreConfig) -> Result<(), String> {
     let mission = mission.inner().clone();
-    eprintln!("set_config: {:?}", config);
     mission.set_config(config).map_err(|e| e.to_string())
 }
 
@@ -59,16 +58,12 @@ fn start_full_scan(mission: tauri::State<Arc<Mission>>) {
 #[tauri::command]
 fn stop_full_scan(mission: tauri::State<Arc<Mission>>) {
     mission.stop_full_scan();
-    eprintln!("Scan stopped")
 }
 
 #[tauri::command]
 async fn apply_action_batch(batch: ExclusionActionBatch) -> Result<(), ApplyErrors> {
-    eprintln!("apply_action_batch: {:?}", batch);
     tauri::async_runtime::spawn_blocking(move || {
-        let r = batch.apply().tap_err(|e| {
-            eprintln!("Error when applying batch: {:?}", e);
-        });
+        let r = batch.apply().tap_err(|e| {});
         ApplyErrors::from(r)
     })
     .await
@@ -127,7 +122,6 @@ fn main() {
             build_meta
         ])
         .setup(move |app| {
-            // TODO circular dependency?
             app.manage(
                 Mission::new_arc(app.handle(), config_manager).expect("failed to create mission"),
             );

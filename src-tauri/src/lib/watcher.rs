@@ -64,7 +64,6 @@ pub async fn watch_task(mission: Weak<Mission>) -> io::Result<()> {
             if !item.path.as_os_str().is_empty() {
                 tauri::async_runtime::spawn_blocking({
                     let _path = item.path.clone();
-                    // TODO make walk_config Arc
                     let walk_config = config.walk.clone();
                     let cache = cache.clone();
                     let metrics = metrics.clone();

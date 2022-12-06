@@ -31,7 +31,6 @@ export function equalSelector<T>(options: EqualSelectorOptions<T>): RecoilState<
       if (prior != null && options.equals(latest, prior)) {
         return prior;
       }
-      console.log("equalSelector rerender", options.key, latest, prior);
       prior = latest;
       return latest as T;
     }, ...options.set ? {set: options.set} : {}
