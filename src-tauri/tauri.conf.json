@@ -66,7 +66,12 @@
       "csp": null
     },
     "updater": {
-      "active": false
+      "active": true,
+      "dialog": true,
+      "endpoints": [
+        "https://tmexclude-tauri-update.lightquantum.me/v1/{{target}}/{{arch}}/{{current_version}}"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDNEQzREQTVEQzc3QkIyMTUKUldRVnNudkhYZHJFUFhiMkdHaGcwSGE0aUQzRHlsMzFMczNQWldmU3V2czNhVXNxbGdNRW9XRCsK"
     },
     "windows": [
       {
