@@ -89,7 +89,6 @@ export const perRuleState = equalSelectorFamily({
     return rules[ruleName];
   },
   set: (ruleName: string) => ({set}, newValue) => {
-    console.log("set", ruleName, newValue);
     set(rulesState, (prev) => ((!(newValue instanceof DefaultValue) && prev !== null) ? {
       ...prev,
       [ruleName]: newValue
@@ -263,7 +262,6 @@ export const SyncActionBatch = () => {
   const set = useSetRecoilState(selectedActionBatchState);
   const initial = useRecoilValue(actionBatchState);
   useEffect(() => {
-    console.log("SyncActionBatch", initial);
     if (initial !== null) {
       set({
         add: [...initial.add],
@@ -288,13 +286,11 @@ export const applyErrorsState = atom<ApplyErrors | null>({
 
 const autoStartEffect: AtomEffect<boolean> = ({onSet, setSelf}) => {
   onSet((newValue) => {
-    console.log("autoStartEffect", newValue);
     const f = async () => {
-      console.log("autoStartEffect(inner)", newValue);
       if (newValue) {
-        console.log(await enableAutoStart());
+        await enableAutoStart();
       } else {
-        console.log(await disableAutoStart());
+        await disableAutoStart();
       }
       setSelf(await getAutoStart());
     };

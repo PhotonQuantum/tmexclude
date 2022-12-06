@@ -29,10 +29,6 @@ export const Overview = React.forwardRef(() => {
 
   const apply = async () => {
     setScanPage("applying");
-    console.log({
-      add: addSelection,
-      remove: removeSelection,
-    });
     try {
       await applyActionBatch({
         add: addSelection,

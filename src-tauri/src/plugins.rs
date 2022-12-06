@@ -96,7 +96,7 @@ pub mod auto_launch {
         fn is_enabled(&self) -> bool {
             let service: id = unsafe { msg_send![class!(SMAppService), mainAppService] };
             let status: NSInteger = unsafe { msg_send![service, status] };
-            dbg!(status) == SMAppServiceStatusEnabled
+            status == SMAppServiceStatusEnabled
         }
     }
 
