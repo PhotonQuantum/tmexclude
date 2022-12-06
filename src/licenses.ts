@@ -179,7 +179,7 @@ export const cargoLicenses: Array<License> = [
     "license": "Apache-2.0 OR MIT",
     "version": "0.2.3"
   }
-]
+];
 export const npmLicenses: Array<License> = [
   {
     "name": "@emotion/react@11.10.5",
@@ -197,27 +197,27 @@ export const npmLicenses: Array<License> = [
     "license": "MIT"
   },
   {
-    "name": "@mantine/core@5.8.4",
+    "name": "@mantine/core@5.9.2",
     "repository": "https://github.com/mantinedev/mantine",
     "license": "MIT"
   },
   {
-    "name": "@mantine/hooks@5.8.4",
+    "name": "@mantine/hooks@5.9.2",
     "repository": "https://github.com/mantinedev/mantine",
     "license": "MIT"
   },
   {
-    "name": "@mantine/notifications@5.8.4",
+    "name": "@mantine/notifications@5.9.2",
     "repository": "https://github.com/mantinedev/mantine",
     "license": "MIT"
   },
   {
-    "name": "@mantine/utils@5.8.4",
+    "name": "@mantine/utils@5.9.2",
     "repository": "https://github.com/mantinedev/mantine",
     "license": "MIT"
   },
   {
-    "name": "@tabler/icons@1.114.0",
+    "name": "@tabler/icons@1.115.0",
     "repository": "https://github.com/tabler/tabler-icons",
     "license": "MIT"
   },
@@ -232,12 +232,12 @@ export const npmLicenses: Array<License> = [
     "license": "Apache-2.0 OR MIT"
   },
   {
-    "name": "@types/lodash@4.14.190",
+    "name": "@types/lodash@4.14.191",
     "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
     "license": "MIT"
   },
   {
-    "name": "@types/node@18.11.9",
+    "name": "@types/node@18.11.11",
     "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
     "license": "MIT"
   },
@@ -257,12 +257,12 @@ export const npmLicenses: Array<License> = [
     "license": "MIT"
   },
   {
-    "name": "@types/react@18.0.25",
+    "name": "@types/react@18.0.26",
     "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
     "license": "MIT"
   },
   {
-    "name": "framer-motion@7.6.15",
+    "name": "framer-motion@7.6.19",
     "repository": "https://github.com/framer/motion",
     "license": "MIT"
   },
@@ -287,7 +287,7 @@ export const npmLicenses: Array<License> = [
     "license": "MIT"
   },
   {
-    "name": "react-router-dom@6.4.3",
+    "name": "react-router-dom@6.4.4",
     "repository": "https://github.com/remix-run/react-router",
     "license": "MIT"
   },
@@ -312,13 +312,8 @@ export const npmLicenses: Array<License> = [
     "license": "MIT"
   },
   {
-    "name": "tauri-plugin-autostart-api@0.0.0",
-    "repository": null,
-    "license": "MIT*"
-  },
-  {
     "name": "typescript@4.9.3",
     "repository": "https://github.com/Microsoft/TypeScript",
     "license": "Apache-2.0"
   }
-]
+];
