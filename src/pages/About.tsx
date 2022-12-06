@@ -3,7 +3,7 @@ import {evDrag, swrFetcher} from "../utils";
 import {BuildMeta} from "../bindings/BuildMeta";
 import {Box, Container, Divider, Group, Image, Stack, Text, Title} from "@mantine/core";
 // @ts-ignore
-import icon from "../assets/harddisk.png";
+import icon from "../assets/tmexclude.png";
 
 export const About = () => {
   const {data} = useSWR<BuildMeta>("build_meta", swrFetcher);
@@ -30,8 +30,8 @@ export const About = () => {
     <>
       <Box pt={24} onMouseDown={evDrag}/>
       <Container pl={24} pt={12}>
-        <Group spacing={"xl"} align={"flex-start"}>
-          <Image src={icon} width={64}/>
+        <Group spacing={"xl"} align={"flex-start"} position={"center"}>
+          <Image src={icon} width={48} mt={"md"}/>
           <Stack spacing={"xs"}>
             <Stack spacing={0}>
               <Title order={4}>TimeMachine Exclude</Title>
