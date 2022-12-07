@@ -7,7 +7,7 @@ use std::time::Duration;
 use fsevent_stream::ffi::{kFSEventStreamCreateFlagIgnoreSelf, kFSEventStreamEventIdSinceNow};
 use fsevent_stream::stream::{create_event_stream, EventStreamHandler};
 use futures::StreamExt;
-use log::{debug, error};
+use tracing::{debug, error};
 
 use crate::mission::Mission;
 use crate::skip_cache::SkipCache;

@@ -14,6 +14,9 @@ use tauri::{
     ActivationPolicy, CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu,
     SystemTrayMenuItem,
 };
+use tracing::{error, instrument};
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
 use window_vibrancy::NSVisualEffectMaterial;
 
 use tmexclude_lib::{
@@ -30,40 +33,49 @@ mod plugins;
 mod utils;
 
 #[tauri::command]
+#[instrument(skip(mission))]
 fn metrics(mission: tauri::State<Arc<Mission>>) -> Arc<Metrics> {
     mission.metrics()
 }
 
 #[tauri::command]
+#[instrument(skip(mission))]
 fn get_config(mission: tauri::State<Arc<Mission>>) -> Arc<PreConfig> {
     mission.config()
 }
 
 #[tauri::command]
+#[instrument(skip_all)]
 fn set_config(mission: tauri::State<Arc<Mission>>, config: PreConfig) -> Result<(), String> {
     let mission = mission.inner().clone();
     mission.set_config(config).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
+#[instrument(skip(mission))]
 fn scan_status(mission: tauri::State<Arc<Mission>>) -> ScanStatus {
     mission.scan_status()
 }
 
 #[tauri::command]
+#[instrument(skip(mission))]
 fn start_full_scan(mission: tauri::State<Arc<Mission>>) {
     mission.inner().clone().full_scan()
 }
 
 #[tauri::command]
+#[instrument(skip(mission))]
 fn stop_full_scan(mission: tauri::State<Arc<Mission>>) {
     mission.stop_full_scan();
 }
 
 #[tauri::command]
+#[instrument(skip(batch), fields(add = batch.add.len(), remove = batch.remove.len()))]
 async fn apply_action_batch(batch: ExclusionActionBatch) -> Result<(), ApplyErrors> {
     tauri::async_runtime::spawn_blocking(move || {
-        let r = batch.apply().tap_err(|e| {});
+        let r = batch
+            .apply()
+            .tap_err(|e| e.values().for_each(|e| error!(?e)));
         ApplyErrors::from(r)
     })
     .await
@@ -83,6 +95,18 @@ fn system_tray() -> SystemTray {
 }
 
 fn main() {
+    let _guard = sentry::init((
+        env!("SENTRY_DSN"),
+        sentry::ClientOptions {
+            release: Some(build_meta().version.into()),
+            ..Default::default()
+        },
+    ));
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::fmt::layer())
+        .with(sentry::integrations::tracing::layer())
+        .init();
+
     let context = tauri::generate_context!();
 
     let config_manager = ConfigManager::new().unwrap();

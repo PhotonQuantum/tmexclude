@@ -1,7 +1,7 @@
 //! Background plugin.
 
-use tauri::plugin::Plugin;
 use tauri::{AppHandle, RunEvent, Window, WindowEvent, Wry};
+use tauri::plugin::Plugin;
 
 pub struct EnvironmentPlugin;
 
@@ -47,8 +47,9 @@ pub mod auto_launch {
     use cocoa::base::id;
     use cocoa::foundation::NSInteger;
     use objc::runtime::{BOOL, NO};
-    use tauri::plugin::{Builder, TauriPlugin};
     use tauri::{Manager, Runtime, State};
+    use tauri::plugin::{Builder, TauriPlugin};
+    use tracing::{error, instrument};
 
     pub fn init<R: Runtime>() -> TauriPlugin<R> {
         Builder::new("auto_launch")
@@ -62,18 +63,21 @@ pub mod auto_launch {
     }
 
     #[tauri::command]
+    #[instrument(skip(manager))]
     async fn enable(manager: State<'_, LaunchManager>) -> Result<(), ()> {
         manager.enable();
         Ok(())
     }
 
     #[tauri::command]
+    #[instrument(skip(manager))]
     async fn disable(manager: State<'_, LaunchManager>) -> Result<(), ()> {
         manager.disable();
         Ok(())
     }
 
     #[tauri::command]
+    #[instrument(skip(manager))]
     async fn is_enabled(manager: State<'_, LaunchManager>) -> Result<bool, ()> {
         Ok(manager.is_enabled())
     }
@@ -95,12 +99,36 @@ pub mod auto_launch {
         }
         fn is_enabled(&self) -> bool {
             let service: id = unsafe { msg_send![class!(SMAppService), mainAppService] };
-            let status: NSInteger = unsafe { msg_send![service, status] };
-            status == SMAppServiceStatusEnabled
+            let r: NSInteger = unsafe { msg_send![service, status] };
+            let status = SmAppServiceStatus::from(r);
+            match status {
+                SmAppServiceStatus::Enabled => true,
+                SmAppServiceStatus::NotRegistered => false,
+                _ => {
+                    error!(?status, "Unexpected status");
+                    false
+                }
+            }
         }
     }
 
-    //noinspection RsConstNaming
-    #[allow(non_upper_case_globals)]
-    const SMAppServiceStatusEnabled: NSInteger = 1;
+    #[derive(Debug, Copy, Clone, Eq, PartialEq)]
+    enum SmAppServiceStatus {
+        NotRegistered = 0,
+        Enabled = 1,
+        RequiresApproval = 2,
+        NotFound = 3,
+    }
+
+    impl From<NSInteger> for SmAppServiceStatus {
+        fn from(i: NSInteger) -> Self {
+            match i {
+                0 => SmAppServiceStatus::NotRegistered,
+                1 => SmAppServiceStatus::Enabled,
+                2 => SmAppServiceStatus::RequiresApproval,
+                3 => SmAppServiceStatus::NotFound,
+                _ => unreachable!(),
+            }
+        }
+    }
 }

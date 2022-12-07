@@ -11,9 +11,9 @@ use core_foundation::number::{kCFBooleanFalse, kCFBooleanTrue};
 use core_foundation::string::CFStringRef;
 use core_foundation::url;
 use core_foundation::url::{kCFURLIsExcludedFromBackupKey, CFURL};
-use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use tap::TapFallible;
+use tracing::{info, warn};
 use ts_rs::TS;
 
 use crate::error::ApplyError;

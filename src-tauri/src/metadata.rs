@@ -4,8 +4,8 @@ use ts_rs::TS;
 #[derive(Debug, Serialize, TS)]
 #[ts(export, export_to = "../src/bindings/")]
 pub struct BuildMeta {
-    version: String,
-    timestamp: String,
+    pub version: String,
+    pub timestamp: String,
 }
 
 impl Default for BuildMeta {

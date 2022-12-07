@@ -50,6 +50,8 @@ jobs:
       - name: Run Clippy Lints 🔨
         run: cargo clippy --all-targets --tests
         working-directory: ./src-tauri
+        env:
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
 
   test:
     name: Test
@@ -91,6 +93,8 @@ jobs:
       - name: Running Tests 🚀
         run: cargo test --tests
         working-directory: ./src-tauri
+        env:
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
 
   package:
     runs-on: macos-12
@@ -137,5 +141,6 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         with:
           args: --target universal-apple-darwin

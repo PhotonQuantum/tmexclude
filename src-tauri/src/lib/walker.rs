@@ -9,10 +9,10 @@ use std::sync::Arc;
 use crossbeam::queue::SegQueue;
 use itertools::Itertools;
 use jwalk::WalkDirGeneric;
-use log::{debug, warn};
 use moka::sync::Cache;
 use tap::TapFallible;
 use tauri::async_runtime::Sender;
+use tracing::{debug, warn};
 
 use crate::config::{Directory, Rule, WalkConfig};
 use crate::skip_cache::CachedPath;

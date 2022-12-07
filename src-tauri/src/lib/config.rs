@@ -12,10 +12,10 @@ use std::{fs, iter};
 
 use directories::BaseDirs;
 use itertools::Itertools;
-use log::warn;
 use maplit::hashset;
 use serde::{Deserialize, Serialize};
 use tap::TapFallible;
+use tracing::warn;
 use ts_rs::TS;
 
 use crate::error::{ConfigError, ConfigIOError};
