@@ -1,7 +1,7 @@
 //! Background plugin.
 
-use tauri::{AppHandle, RunEvent, Window, WindowEvent, Wry};
 use tauri::plugin::Plugin;
+use tauri::{AppHandle, RunEvent, Window, WindowEvent, Wry};
 
 pub struct EnvironmentPlugin;
 
@@ -42,20 +42,28 @@ impl Plugin<Wry> for BackgroundPlugin {
 }
 
 pub mod auto_launch {
-    use std::ptr;
+    use std::{env, ptr};
 
+    use auto_launch::{AutoLaunch, AutoLaunchBuilder};
     use cocoa::base::id;
     use cocoa::foundation::NSInteger;
-    use objc::runtime::{BOOL, NO};
-    use tauri::{Manager, Runtime, State};
+    use objc::runtime::{Class, BOOL, NO};
     use tauri::plugin::{Builder, TauriPlugin};
+    use tauri::{Manager, Runtime, State};
     use tracing::{error, instrument};
 
     pub fn init<R: Runtime>() -> TauriPlugin<R> {
         Builder::new("auto_launch")
             .invoke_handler(tauri::generate_handler![enable, disable, is_enabled])
             .setup(move |app| {
-                let manager = LaunchManager;
+                let current_exe = env::current_exe()?;
+                let auto_launch = AutoLaunchBuilder::new()
+                    .set_app_name(&app.package_info().name)
+                    .set_use_launch_agent(false)
+                    .set_app_path(&current_exe.canonicalize()?.display().to_string())
+                    .build()
+                    .map_err(|e| e.to_string())?;
+                let manager = LaunchManager(auto_launch);
                 app.manage(manager);
                 Ok(())
             })
@@ -65,14 +73,18 @@ pub mod auto_launch {
     #[tauri::command]
     #[instrument(skip(manager))]
     async fn enable(manager: State<'_, LaunchManager>) -> Result<(), ()> {
-        manager.enable();
+        if !manager.enable() {
+            error!("failed to enable auto launch");
+        }
         Ok(())
     }
 
     #[tauri::command]
     #[instrument(skip(manager))]
     async fn disable(manager: State<'_, LaunchManager>) -> Result<(), ()> {
-        manager.disable();
+        if !manager.disable() {
+            error!("Failed to disable auto launch");
+        }
         Ok(())
     }
 
@@ -82,32 +94,64 @@ pub mod auto_launch {
         Ok(manager.is_enabled())
     }
 
-    struct LaunchManager;
+    struct LaunchManager(AutoLaunch);
 
     impl LaunchManager {
         fn enable(&self) -> bool {
-            let service: id = unsafe { msg_send![class!(SMAppService), mainAppService] };
-            let result: BOOL =
-                unsafe { msg_send![service, registerAndReturnError: ptr::null_mut::<id>()] };
-            !matches!(result, NO)
+            if let Some(cls) = Class::get("SMAppService") {
+                let service: id = unsafe { msg_send![cls, mainAppService] };
+                let result: BOOL =
+                    unsafe { msg_send![service, registerAndReturnError: ptr::null_mut::<id>()] };
+                let succ = !matches!(result, NO);
+                if !succ {
+                    error!("Failed to register app to login items through SMAppService");
+                }
+                succ
+            } else {
+                let r = self.0.enable();
+                if let Err(ref e) = r {
+                    error!(?e, "Failed to register app to login items");
+                }
+                r.is_ok()
+            }
         }
         fn disable(&self) -> bool {
-            let service: id = unsafe { msg_send![class!(SMAppService), mainAppService] };
-            let result: BOOL =
-                unsafe { msg_send![service, unregisterAndReturnError: ptr::null_mut::<id>()] };
-            !matches!(result, NO)
+            if let Some(cls) = Class::get("SMAppService") {
+                let service: id = unsafe { msg_send![cls, mainAppService] };
+                let result: BOOL =
+                    unsafe { msg_send![service, unregisterAndReturnError: ptr::null_mut::<id>()] };
+                let succ = !matches!(result, NO);
+                if !succ {
+                    error!("Failed to unregister app to login items through SMAppService");
+                }
+                succ
+            } else {
+                let r = self.0.disable();
+                if let Err(ref e) = r {
+                    error!(?e, "Failed to unregister app to login items");
+                }
+                r.is_ok()
+            }
         }
         fn is_enabled(&self) -> bool {
-            let service: id = unsafe { msg_send![class!(SMAppService), mainAppService] };
-            let r: NSInteger = unsafe { msg_send![service, status] };
-            let status = SmAppServiceStatus::from(r);
-            match status {
-                SmAppServiceStatus::Enabled => true,
-                SmAppServiceStatus::NotRegistered => false,
-                _ => {
-                    error!(?status, "Unexpected status");
-                    false
+            if let Some(cls) = Class::get("SMAppService") {
+                let service: id = unsafe { msg_send![cls, mainAppService] };
+                let r: NSInteger = unsafe { msg_send![service, status] };
+                let status = SmAppServiceStatus::from(r);
+                match status {
+                    SmAppServiceStatus::Enabled => true,
+                    SmAppServiceStatus::NotRegistered => false,
+                    _ => {
+                        error!(?status, "Unexpected status");
+                        false
+                    }
                 }
+            } else {
+                let r = self.0.is_enabled();
+                if let Err(ref e) = r {
+                    error!(?e, "Failed to check status of auto launch");
+                }
+                r.unwrap_or_default()
             }
         }
     }

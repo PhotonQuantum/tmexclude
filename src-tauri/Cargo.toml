@@ -23,6 +23,7 @@ tauri-build = { version = "1.0.0", features = [] }
 vergen = "7.4"
 
 [dependencies]
+auto-launch = "0.4"
 fsevent-stream = "0.2"
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive", "rc"] }
