@@ -272,7 +272,7 @@ export const SyncActionBatch = () => {
   return null;
 }
 
-export type ScanPage = "scan" | "detail" | "applying" | "done";
+export type ScanPage = "scan" | "detail" | "applying" | "done" | "log";
 
 export const scanPageState = atom<ScanPage>({
   key: "scanPage",

@@ -112,6 +112,20 @@ export const App = () => {
                   boxShadow: theme.shadows.xs,
                 }
               })
+            },
+            Navbar: {
+              styles: {
+                root: {
+                  zIndex: 250
+                }
+              }
+            },
+            Header: {
+              styles: {
+                root: {
+                  zIndex: 251
+                }
+              }
             }
           }
         }}

@@ -1,4 +1,3 @@
-import {useTableStyles} from "../../../utils";
 import {useRecoilValue, useSetRecoilState} from "recoil";
 import {
   applyErrorsState,
@@ -6,18 +5,15 @@ import {
   selectedAddActionBatchState,
   selectedRemoveActionBatchState
 } from "../../../states";
-import React, {useState} from "react";
-import {Box, Button, Group, Modal, ScrollArea, Stack, Table, Text, ThemeIcon, useMantineTheme} from "@mantine/core";
+import React from "react";
+import {Box, Button, Group, Stack, Text, ThemeIcon, useMantineTheme} from "@mantine/core";
 import {IconAlertTriangle, IconChevronLeft, IconCircleCheck, IconHomeCheck, IconHomeExclamation} from "@tabler/icons";
 import {motion} from "framer-motion";
 import {fadeAnimation} from "../../../transitions";
-import {TipText} from "../../../components/TipText";
-import {PathText} from "../../../components/PathText";
 import {stopFullScan} from "../../../commands";
 
 export const Done = React.forwardRef(() => {
   const theme = useMantineTheme();
-  const {classes, cx} = useTableStyles();
 
   const applyErrors = useRecoilValue(applyErrorsState);
   const addSelection = useRecoilValue(selectedAddActionBatchState);
@@ -26,7 +22,6 @@ export const Done = React.forwardRef(() => {
 
   const selectedItems = addSelection.length + removeSelection.length;
 
-  const [logOpened, setLogOpened] = useState(false);
 
   const onBack = async () => {
     await stopFullScan();
@@ -67,42 +62,19 @@ export const Done = React.forwardRef(() => {
               </Group>
               <Text size={"xs"} color={"dimmed"} pb={4}>applied</Text>
             </Group>
-            <Modal centered size={"lg"} title={"Failed items"}
-                   opened={logOpened} onClose={() => setLogOpened(false)}
-            >
-              <ScrollArea sx={{height: "250px"}}>
-                <Table highlightOnHover>
-                  <thead className={cx(classes.stickyHeader)}>
-                  <tr>
-                    <th>Path</th>
-                    <th>Reason</th>
-                  </tr>
-                  </thead>
-                  <tbody>
-                  {
-                    Object.entries(applyErrors?.errors ?? {}).map(([path, reason]) => (
-                      <tr key={path}>
-                        <td><PathText withinPortal keepFirst={4} keepLast={2} path={path} lineClamp={3}/></td>
-                        <td><TipText withinPortal lineClamp={3}>{reason}</TipText></td>
-                      </tr>
-                    ))
-                  }
-                  </tbody>
-                </Table>
-              </ScrollArea>
-            </Modal>
             {
               (applyErrors === null) ?
                 <Text size={"sm"}>Selected items has been excluded/included<br/> in TimeMachine backups.</Text> :
                 <>
                   <Text size={"sm"}>Some items failed to be excluded/included<br/> in TimeMachine backups.</Text>
                   <Button size={"xs"} variant={"light"} color={"orange"} mr={"auto"}
-                          onClick={() => setLogOpened(true)}>
+                          onClick={() => setScanPage("log")}>
                     Show log
                   </Button>
                 </>
             }
           </Stack>
+
         </Group>
         <Box sx={{flexGrow: 1}}/>
       </Stack>

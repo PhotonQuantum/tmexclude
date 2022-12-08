@@ -9,6 +9,7 @@ import {Applying} from "./scan/Applying";
 import {Detail} from "./scan/Detail";
 import {AnimatePresence} from "framer-motion";
 import {InProgress} from "./scan/InProgress";
+import {Log} from "./scan/Log";
 
 export const Scan = () => {
   const scanPage = useRecoilValue(scanPageState);
@@ -28,7 +29,10 @@ export const Scan = () => {
             <Detail/> :
             scanPage === "applying" ?
               <Applying/> :
-              <Done/>}
+              scanPage === "done" ?
+                <Done/> :
+                <Log/>
+        }
       </AnimatePresence>
     </Container>
   )
