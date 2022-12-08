@@ -9,6 +9,8 @@ extern crate objc;
 
 use std::sync::Arc;
 
+use once_cell::sync::Lazy;
+use regex::Regex;
 use tap::TapFallible;
 use tauri::{
     ActivationPolicy, CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu,
@@ -75,7 +77,7 @@ async fn apply_action_batch(batch: ExclusionActionBatch) -> Result<(), ApplyErro
     tauri::async_runtime::spawn_blocking(move || {
         let r = batch
             .apply()
-            .tap_err(|e| e.values().for_each(|e| error!(?e)));
+            .tap_err(|e| e.values().for_each(|e| error!(?e, "Apply batch failed")));
         ApplyErrors::from(r)
     })
     .await
@@ -95,10 +97,23 @@ fn system_tray() -> SystemTray {
 }
 
 fn main() {
+    static PATH_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r#""/.*""#).unwrap());
     let _guard = sentry::init((
         env!("SENTRY_DSN"),
         sentry::ClientOptions {
             release: Some(build_meta().version.into()),
+            before_send: Some(Arc::new(|mut ev| {
+                ev.message = ev
+                    .message
+                    .map(|s| PATH_RE.replace_all(&s, "\"<SENSITIVE>\"").to_string());
+                Some(ev)
+            })),
+            before_breadcrumb: Some(Arc::new(|mut breadcrumb| {
+                breadcrumb.message = breadcrumb
+                    .message
+                    .map(|s| PATH_RE.replace_all(&s, "\"<SENSITIVE>\"").to_string());
+                Some(breadcrumb)
+            })),
             ..Default::default()
         },
     ));
