@@ -8,28 +8,12 @@ import {ScanStatus} from "./bindings/ScanStatus";
 import {ExclusionActionBatch} from "./bindings/ExclusionActionBatch";
 import {useEffect} from "react";
 import {ApplyErrors} from "./bindings/ApplyErrors";
-import {
-  disableAutoStart,
-  enableAutoStart,
-  getAutoStart,
-  getConfig,
-  getStore,
-  scanStatus,
-  setConfig,
-  setStore
-} from "./commands";
+import {disableAutoStart, enableAutoStart, getAutoStart, getConfig, getStore, scanStatus, setStore} from "./commands";
 import i18n from "./i18n";
 
 const finalConfigEffect: AtomEffect<PreConfig | null> = ({
                                                            setSelf,
-                                                           onSet
                                                          }) => {
-  onSet((newValue) => {
-    if (newValue !== null) {
-      setConfig(newValue);
-    }
-  });
-
   const f = async () => {
     if (typeof window === "undefined") {
       return () => {

@@ -332,6 +332,10 @@ impl ConfigManager {
         let content = fs::read_to_string(&self.path).map_err(ConfigIOError::ReadConfig)?;
         serde_yaml::from_str(&content).map_err(|e| ConfigIOError::Deserialize(Box::new(e)))
     }
+    pub fn reset(&self) -> Result<(), ConfigIOError> {
+        fs::write(&self.path, DEFAULT_CONFIG).map_err(ConfigIOError::WriteConfig)?;
+        Ok(())
+    }
     /// Save config to file.
     ///
     /// # Errors

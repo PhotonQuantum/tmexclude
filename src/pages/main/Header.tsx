@@ -1,10 +1,11 @@
-import {useRecoilValue, useResetRecoilState, useSetRecoilState} from "recoil";
-import {configChangedState, draftConfigState, finalConfigState} from "../../states";
-import {Box, Button, Group, Header, Text} from "@mantine/core";
-import {IconAdjustments} from "@tabler/icons";
-import React from "react";
+import {useRecoilValue, useResetRecoilState} from "recoil";
+import {configChangedState, draftConfigState} from "../../states";
+import {Box, Button, Group, Header, Text, Tooltip} from "@mantine/core";
+import {IconAdjustments, IconAlertTriangle} from "@tabler/icons";
+import React, {useState} from "react";
 import {evDrag} from "../../utils";
 import {useTranslation} from "react-i18next";
+import {setConfig} from "../../commands";
 
 export const MainHeader = React.forwardRef<HTMLElement>((props, ref) => {
   const {t} = useTranslation();
@@ -12,7 +13,24 @@ export const MainHeader = React.forwardRef<HTMLElement>((props, ref) => {
   const changed = useRecoilValue(configChangedState);
   const resetDraft = useResetRecoilState(draftConfigState);
   const draftConfig = useRecoilValue(draftConfigState);
-  const setFinalConfig = useSetRecoilState(finalConfigState);
+
+  const [error, setError] = useState<string | null>(null);
+
+  const updateFinalConfig = async () => {
+    if (draftConfig !== null) {
+      try {
+        await setConfig(draftConfig);
+      } catch (_e: any) {
+        const e = _e as string;
+        setError(e);
+      }
+    }
+  };
+
+  const resetDraftConfig = () => {
+    setError(null);
+    resetDraft();
+  }
 
   return (
     <Header ref={ref} height={55} p="xs"
@@ -35,8 +53,17 @@ export const MainHeader = React.forwardRef<HTMLElement>((props, ref) => {
         <Text size={"md"}>{t('preference')}</Text>
         {changed && <>
           <Box sx={{flexGrow: 1}}/>
-          <Button variant={"subtle"} compact sx={{boxShadow: "none"}} onClick={() => resetDraft()}>{t('reset')}</Button>
-          <Button compact onClick={() => setFinalConfig(draftConfig)}>{t('save')}</Button>
+          <Button variant={"subtle"} compact sx={{boxShadow: "none"}}
+                  onClick={() => resetDraftConfig()}>
+            {t('reset')}
+          </Button>
+          <Tooltip color={"orange"} label={error ?? ""} disabled={error === null} withArrow>
+            <Button color={error !== null ? "orange" : undefined} compact
+                    leftIcon={error !== null && <IconAlertTriangle color={"white"} size={16} strokeWidth={1.5}/>}
+                    onClick={() => updateFinalConfig()}>
+              {t('save')}
+            </Button>
+          </Tooltip>
         </>}
       </Group>
     </Header>)

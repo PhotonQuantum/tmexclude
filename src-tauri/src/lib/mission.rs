@@ -11,6 +11,7 @@ use serde::Serialize;
 use serde_json::Value;
 use tauri::async_runtime::{channel, JoinHandle};
 use tauri::{AppHandle, Manager};
+use tracing::error;
 use ts_rs::TS;
 
 use crate::config::{Config, ConfigManager, PreConfig};
@@ -70,7 +71,14 @@ impl Mission {
         config_manager: ConfigManager,
         properties: Store,
     ) -> Result<Arc<Self>, ConfigError> {
-        let pre_config = config_manager.load()?;
+        let pre_config = match config_manager.load() {
+            Ok(pre_config) => pre_config,
+            Err(e) => {
+                error!(?e, "Failed to load config, resetting to default");
+                config_manager.reset()?;
+                config_manager.load()?
+            }
+        };
         let config = Config::try_from(pre_config.clone())?;
         Ok(Arc::new_cyclic(move |this| {
             let task = watch_task(this.clone());
@@ -116,8 +124,8 @@ impl Mission {
     /// # Errors
     /// Returns error if can't persist config, or can't parse surface config (shouldn't happen).
     pub fn set_config(self: Arc<Self>, config: PreConfig) -> Result<(), ConfigError> {
-        self.config_manager.save(&config)?;
         let config_ = Config::try_from(config.clone())?;
+        self.config_manager.save(&config)?;
         self.pre_config.store(Arc::new(config));
         self.config.store(Arc::new(config_));
         self.reload();
