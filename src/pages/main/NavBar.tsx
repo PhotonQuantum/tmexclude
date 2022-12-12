@@ -1,11 +1,12 @@
-'use client';
 import {Box, Navbar, NavLink, Text} from "@mantine/core";
 import {Fragment} from "react";
 import {routes} from "./routes";
 import {Link, useLocation} from "react-router-dom";
-import { evDrag } from "../../utils";
+import {evDrag} from "../../utils";
+import {useTranslation} from "react-i18next";
 
 export const NavBar = () => {
+  const {t} = useTranslation();
   const location = useLocation();
 
   return (
@@ -17,7 +18,7 @@ export const NavBar = () => {
               }
             }}>
       <Box sx={{height: 40}} onMouseDown={evDrag}/>
-      {routes.map((section, idx) => (section.kind === "link" ? <Fragment key={`nav-${idx}`}>
+      {routes(t).map((section, idx) => (section.kind === "link" ? <Fragment key={`nav-${idx}`}>
         <Navbar.Section>
           <Link key={`link-${section.title}`} to={section.href} style={{textDecoration: "none"}}>
             <NavLink

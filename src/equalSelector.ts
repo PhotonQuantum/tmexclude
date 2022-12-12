@@ -1,4 +1,3 @@
-'use client';
 import {
   ReadOnlySelectorFamilyOptions,
   ReadOnlySelectorOptions,

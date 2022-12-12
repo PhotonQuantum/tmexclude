@@ -1,4 +1,3 @@
-'use client';
 import {Text, TextProps, Tooltip} from "@mantine/core";
 import {useIsOverflow} from "../utils";
 import {useMergedRef} from "@mantine/hooks";

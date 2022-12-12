@@ -1,4 +1,3 @@
-'use client';
 import {Button, Group, Stack, Text, Tooltip} from "@mantine/core";
 import {IconAlertTriangle, IconChevronLeft} from "@tabler/icons";
 import React, {useState} from "react";
@@ -12,8 +11,11 @@ import {
 import {motion} from "framer-motion";
 import {slideFadeAnimation} from "../../../transitions";
 import {SelectionTable} from "../../../components/SelectionTable";
+import {useTranslation} from "react-i18next";
 
 export const Detail = React.forwardRef(() => {
+  const {t} = useTranslation();
+
   const {add: addData, remove: removeData} = useRecoilValue(actionBatchState);
   const [addSelection, setAddSelection] = useRecoilState(selectedAddActionBatchState);
   const [removeSelection, setRemoveSelection] = useRecoilState(selectedRemoveActionBatchState);
@@ -22,12 +24,13 @@ export const Detail = React.forwardRef(() => {
   const [addTrunc, setAddTrunc] = useState<number | null>(null);
   const [removeTrunc, setRemoveTrunc] = useState<number | null>(null);
 
-  const truncatedNote = (count: number) => (<Tooltip label={`Showing 100/${count} rows, please refine your search.`}>
-    <Group spacing={"xs"}>
-      <Text size={"xs"} color={"orange"}>Truncated</Text>
-      <IconAlertTriangle size={16} strokeWidth={1} color={"orange"}/>
-    </Group>
-  </Tooltip>);
+  const truncatedNote = (count: number) => (
+    <Tooltip label={t("showing_n_rows", {count})}>
+      <Group spacing={"xs"}>
+        <Text size={"xs"} color={"orange"}>{t('truncated')}</Text>
+        <IconAlertTriangle size={16} strokeWidth={1} color={"orange"}/>
+      </Group>
+    </Tooltip>);
 
   return (
     <motion.div key={"detail"} style={{height: "100%"}} {...slideFadeAnimation}>
@@ -37,11 +40,11 @@ export const Detail = React.forwardRef(() => {
         <Button size={"xs"} mr={"auto"} sx={{boxShadow: "none"}} variant={"subtle"}
                 leftIcon={<IconChevronLeft size={16} strokeWidth={1}/>}
                 onClick={() => setScanPage("scan")}>
-          Back
+          {t('back')}
         </Button>
         <Stack spacing={"xs"} sx={{height: "100%"}}>
           <Group position={"apart"}>
-            <Text size={"xs"} color={"dimmed"}>Files to be excluded</Text>
+            <Text size={"xs"} color={"dimmed"}>{t('files_to_be_excluded')}</Text>
             {addTrunc !== null && truncatedNote(addTrunc)}
           </Group>
           <SelectionTable
@@ -50,7 +53,7 @@ export const Detail = React.forwardRef(() => {
             limit={100} onChange={setAddSelection} onTruncated={setAddTrunc}
           />
           <Group position={"apart"}>
-            <Text size={"xs"} color={"dimmed"}>Files to be included</Text>
+            <Text size={"xs"} color={"dimmed"}>{t('files_to_be_included')}</Text>
             {removeTrunc !== null && truncatedNote(removeTrunc)}
           </Group>
           <SelectionTable

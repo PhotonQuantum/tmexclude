@@ -20,11 +20,13 @@ specifiers:
   '@types/react-router-dom': ^5.3.3
   '@types/react-timeago': ^4.1.3
   framer-motion: ^7.6.19
+  i18next: ^22.4.2
   lodash: ^4.17.21
   parcel: ^2.8.1
   process: ^0.11.10
   react: ^18.2.0
   react-dom: ^18.2.0
+  react-i18next: ^12.1.1
   react-router-dom: ^6.4.5
   react-timeago: ^7.1.0
   recoil: ^0.7.6
@@ -42,10 +44,12 @@ dependencies:
   '@tabler/icons': 1.116.1_biqbaboplfbrettd7655fr4n2y
   '@tauri-apps/api': 1.2.0
   framer-motion: 7.6.19_biqbaboplfbrettd7655fr4n2y
+  i18next: 22.4.2
   lodash: 4.17.21
   process: 0.11.10
   react: 18.2.0
   react-dom: 18.2.0_react@18.2.0
+  react-i18next: 12.1.1_vyk4jfl3xuiyfowhx4vgrevzpq
   react-router-dom: 6.4.5_biqbaboplfbrettd7655fr4n2y
   react-timeago: 7.1.0_react@18.2.0
   recoil: 0.7.6_biqbaboplfbrettd7655fr4n2y
@@ -655,7 +659,7 @@ packages:
       '@motionone/easing': 10.15.1
       '@motionone/types': 10.15.1
       '@motionone/utils': 10.15.1
-      tslib: 2.4.0
+      tslib: 2.4.1
     dev: false
 
   /@motionone/dom/10.13.1:
@@ -666,14 +670,14 @@ packages:
       '@motionone/types': 10.15.1
       '@motionone/utils': 10.15.1
       hey-listen: 1.0.8
-      tslib: 2.4.0
+      tslib: 2.4.1
     dev: false
 
   /@motionone/easing/10.15.1:
     resolution: {integrity: sha512-6hIHBSV+ZVehf9dcKZLT7p5PEKHGhDwky2k8RKkmOvUoYP3S+dXsKupyZpqx5apjd9f+php4vXk4LuS+ADsrWw==}
     dependencies:
       '@motionone/utils': 10.15.1
-      tslib: 2.4.0
+      tslib: 2.4.1
     dev: false
 
   /@motionone/generators/10.15.1:
@@ -681,7 +685,7 @@ packages:
     dependencies:
       '@motionone/types': 10.15.1
       '@motionone/utils': 10.15.1
-      tslib: 2.4.0
+      tslib: 2.4.1
     dev: false
 
   /@motionone/types/10.15.1:
@@ -693,7 +697,7 @@ packages:
     dependencies:
       '@motionone/types': 10.15.1
       hey-listen: 1.0.8
-      tslib: 2.4.0
+      tslib: 2.4.1
     dev: false
 
   /@msgpackr-extract/msgpackr-extract-darwin-arm64/2.2.0:
@@ -2097,6 +2101,12 @@ packages:
       react-is: 16.13.1
     dev: false
 
+  /html-parse-stringify/3.0.1:
+    resolution: {integrity: sha512-KknJ50kTInJ7qIScF3jeaFRpMpE8/lfiTdzf/twXyPBLAGrLRTmkz3AdTnKeh40X8k9L2fdYwEp/42WGXIRGcg==}
+    dependencies:
+      void-elements: 3.1.0
+    dev: false
+
   /html-tokenize/2.0.1:
     resolution: {integrity: sha512-QY6S+hZ0f5m1WT8WffYN+Hg+xm/w5I8XeUcAq/ZYP5wVC8xbKi4Whhru3FtrAebD5EhBW8rmFzkDI6eCAuFe2w==}
     hasBin: true
@@ -2151,6 +2161,12 @@ packages:
       domutils: 2.8.0
       entities: 3.0.1
     dev: true
+
+  /i18next/22.4.2:
+    resolution: {integrity: sha512-5gRrkgJRxqsNMJWLZbcby60NuZjD5WtA8Yap7DmP42ccrzksaXpT11JC5505IWHqGoywuESSAgtlif2awtQF7A==}
+    dependencies:
+      '@babel/runtime': 7.20.6
+    dev: false
 
   /import-fresh/3.3.0:
     resolution: {integrity: sha512-veYYhQa+D1QBKznvhUHxb8faxlrwUnxseDAbAp457E0wLNio2bOSKnjYDhMj+YiAq61xrMGhQk9iXVk5FzgQMw==}
@@ -2528,6 +2544,26 @@ packages:
     resolution: {integrity: sha512-nQTTcUu+ATDbrSD1BZHr5kgSD4oF8OFjxun8uAaL8RwPBacGBNPf/yAuVVdx17N8XNzRDMrZ9XcKZHCjPW+9ew==}
     dev: true
 
+  /react-i18next/12.1.1_vyk4jfl3xuiyfowhx4vgrevzpq:
+    resolution: {integrity: sha512-mFdieOI0LDy84q3JuZU6Aou1DoWW2fhapcTGeBS8+vWSJuViuoCLQAMYSb0QoHhXS8B0WKUOPpx4cffAP7r/aA==}
+    peerDependencies:
+      i18next: '>= 19.0.0'
+      react: '>= 16.8.0'
+      react-dom: '*'
+      react-native: '*'
+    peerDependenciesMeta:
+      react-dom:
+        optional: true
+      react-native:
+        optional: true
+    dependencies:
+      '@babel/runtime': 7.20.6
+      html-parse-stringify: 3.0.1
+      i18next: 22.4.2
+      react: 18.2.0
+      react-dom: 18.2.0_react@18.2.0
+    dev: false
+
   /react-is/16.13.1:
     resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}
     dev: false
@@ -2875,6 +2911,11 @@ packages:
   /v8-compile-cache/2.3.0:
     resolution: {integrity: sha512-l8lCEmLcLYZh4nbunNZvQCJc5pv7+RCwa8q/LdUx8u7lsWvPDKmpodJAJNwkAhJC//dFY48KuIEmjtd4RViDrA==}
     dev: true
+
+  /void-elements/3.1.0:
+    resolution: {integrity: sha512-Dhxzh5HZuiHQhbvTW9AMetFfBHDMYpo23Uo9btPXgdYP+3T5S+p+jgNy7spra+veYhBP2dCSgxR/i2Y02h5/6w==}
+    engines: {node: '>=0.10.0'}
+    dev: false
 
   /weak-lru-cache/1.2.2:
     resolution: {integrity: sha512-DEAoo25RfSYMuTGc9vPJzZcZullwIqRDSI9LOy+fkCJPi6hykCnfKaXTuPBDuXAUcqHXyOgFtHNp/kB2FjYHbw==}

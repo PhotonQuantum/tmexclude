@@ -8,6 +8,7 @@ use std::{io, mem};
 use arc_swap::ArcSwap;
 use parking_lot::{Mutex, RwLock};
 use serde::Serialize;
+use serde_json::Value;
 use tauri::async_runtime::{channel, JoinHandle};
 use tauri::{AppHandle, Manager};
 use ts_rs::TS;
@@ -15,12 +16,14 @@ use ts_rs::TS;
 use crate::config::{Config, ConfigManager, PreConfig};
 use crate::error::ConfigError;
 use crate::metrics::Metrics;
+use crate::properties::Store;
 use crate::tmutil::ExclusionActionBatch;
 use crate::walker::walk_recursive;
 use crate::watcher::watch_task;
 
 pub struct Mission {
     app: AppHandle,
+    properties: Store,
     config_manager: ConfigManager,
     pre_config: ArcSwap<PreConfig>,
     config: ArcSwap<Config>,
@@ -65,6 +68,7 @@ impl Mission {
     pub fn new_arc(
         app: AppHandle,
         config_manager: ConfigManager,
+        properties: Store,
     ) -> Result<Arc<Self>, ConfigError> {
         let pre_config = config_manager.load()?;
         let config = Config::try_from(pre_config.clone())?;
@@ -73,6 +77,7 @@ impl Mission {
             let handle = tauri::async_runtime::spawn(task);
             Self {
                 app,
+                properties,
                 config_manager,
                 pre_config: ArcSwap::from_pointee(pre_config),
                 config: ArcSwap::from_pointee(config),
@@ -82,6 +87,15 @@ impl Mission {
                 scan_handle: Default::default(),
             }
         }))
+    }
+    pub fn store_get(&self, key: &str) -> Option<Value> {
+        self.properties.get(key)
+    }
+    pub fn store_set(&self, key: String, value: Value) {
+        self.properties.set(&self.app, key, value);
+    }
+    pub fn store_del(&self, key: &str) {
+        self.properties.del(&self.app, key);
     }
     /// Get internal config.
     pub(crate) fn config_(&self) -> Arc<Config> {

@@ -7,6 +7,8 @@ CARGO_LICENSES=$(cargo-license --manifest-path src-tauri/Cargo.toml --direct-dep
 NPM_LICENSES=$(pnpx license-checker --direct --json | jq 'to_entries|map(select(.value.licenses != null and .value.licenses != "" and (.key | contains("tmexclude") | not) ) | {name:.key, repository:.value.repository, license:.value.licenses})')
 
 cat <<EOF >src/licenses.ts
+// noinspection AllyPlainJsInspection
+
 export type License = {
   name: string;
   version?: string;

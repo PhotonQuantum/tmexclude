@@ -1,4 +1,3 @@
-'use client';
 import {motion} from "framer-motion";
 import {Box, Button, Group, Stack, Text, ThemeIcon, useMantineTheme} from "@mantine/core";
 import {IconChevronLeft, IconFilter, IconHomeCheck, IconHomeExclamation} from "@tabler/icons";
@@ -14,8 +13,10 @@ import {
 import {ApplyErrors} from "../../../bindings/ApplyErrors";
 import {slideFadeAnimation} from "../../../transitions";
 import {applyActionBatch, stopFullScan} from "../../../commands";
+import {Trans, useTranslation} from "react-i18next";
 
 export const Overview = React.forwardRef(() => {
+  const {t} = useTranslation();
   const theme = useMantineTheme();
 
   const actionBatch = useRecoilValue(actionBatchState);
@@ -48,7 +49,7 @@ export const Overview = React.forwardRef(() => {
         <Button pos={"absolute"} size={"xs"} sx={{boxShadow: "none"}} variant={"subtle"}
                 leftIcon={<IconChevronLeft size={16} strokeWidth={1}/>}
                 onClick={stopFullScan}>
-          Restart
+          {t('restart')}
         </Button>
         <Box sx={{flexGrow: 1}}/>
         <Group sx={{width: "100%"}} position={"center"}>
@@ -64,30 +65,36 @@ export const Overview = React.forwardRef(() => {
             </ThemeIcon>
           </Group>
           <Stack spacing={"xs"}>
-            <Text size={20}>Scan Complete</Text>
+            <Text size={20}>{t('scan_complete')}</Text>
             {(totalItems > 0) ? <>
               <Group align={"end"} spacing={"xs"}>
                 <Text size={28} color={theme.colorScheme === "dark" ? theme.colors.blue[2] : theme.colors.blue[5]}>
-                  {selectedItems} items
+                  {t('items', {count: selectedItems})}
                 </Text>
-                <Text size={"xs"} color={"dimmed"} pb={4}>selected</Text>
+                <Text size={"xs"} color={"dimmed"} pb={4}>{t('selected')}</Text>
               </Group>
               <Group align={"center"}>
                 <Button size={"xs"} variant={"light"} sx={{boxShadow: "none"}}
                         onClick={() => setScanPage("detail")}>
-                  View items
+                  {t('view_items')}
                 </Button>
-                <Text size={"xs"} color={"dimmed"}>{totalItems} items found</Text>
+                <Text size={"xs"} color={"dimmed"}>{t('items_found', {count: totalItems})}</Text>
               </Group>
             </> : <Text size={"sm"}>
-              Everything looks good!<br/>
-              No files need to be excluded.
+              <Trans
+                i18nKey="everything_looks_good_no_files_need_to_be_excluded"
+                components={{
+                  b: <br/>
+                }}
+              />
             </Text>}
           </Stack>
         </Group>
         {(selectedItems > 0) && <Stack align={"center"} spacing={"xs"} mt={"xl"}>
-          <Button variant={"gradient"} leftIcon={<IconFilter/>} onClick={apply}>Apply</Button>
-          <Text size={"xs"} color={"dimmed"}>Exclude/include selected files from TimeMachine backups</Text>
+          <Button variant={"gradient"} leftIcon={<IconFilter/>} onClick={apply}>{t('apply')}</Button>
+          <Text size={"xs"} color={"dimmed"}>
+            {t("exclude_include_selected_files_from_timemachine_backups")}
+          </Text>
         </Stack>}
         <Box sx={{flexGrow: 1}}/>
       </Stack>

@@ -1,3 +1,5 @@
+// noinspection AllyPlainJsInspection
+
 export type License = {
   name: string;
   version?: string;
@@ -15,7 +17,13 @@ export const cargoLicenses: Array<License> = [
     "name": "assert_cmd",
     "repository": "https://github.com/assert-rs/assert_cmd.git",
     "license": "Apache-2.0 OR MIT",
-    "version": "2.0.6"
+    "version": "2.0.7"
+  },
+  {
+    "name": "auto-launch",
+    "repository": "https://github.com/zzzgydi/auto-launch.git",
+    "license": "MIT",
+    "version": "0.4.0"
   },
   {
     "name": "cocoa",
@@ -72,12 +80,6 @@ export const cargoLicenses: Array<License> = [
     "version": "0.6.0"
   },
   {
-    "name": "log",
-    "repository": "https://github.com/rust-lang/log",
-    "license": "Apache-2.0 OR MIT",
-    "version": "0.4.17"
-  },
-  {
     "name": "maplit",
     "repository": "https://github.com/bluss/maplit",
     "license": "Apache-2.0 OR MIT",
@@ -96,16 +98,34 @@ export const cargoLicenses: Array<License> = [
     "version": "0.2.7"
   },
   {
+    "name": "once_cell",
+    "repository": "https://github.com/matklad/once_cell",
+    "license": "Apache-2.0 OR MIT",
+    "version": "1.16.0"
+  },
+  {
     "name": "parking_lot",
     "repository": "https://github.com/Amanieu/parking_lot",
     "license": "Apache-2.0 OR MIT",
     "version": "0.12.1"
   },
   {
+    "name": "regex",
+    "repository": "https://github.com/rust-lang/regex",
+    "license": "Apache-2.0 OR MIT",
+    "version": "1.7.0"
+  },
+  {
+    "name": "sentry",
+    "repository": "https://github.com/getsentry/sentry-rust",
+    "license": "Apache-2.0",
+    "version": "0.29.1"
+  },
+  {
     "name": "serde",
     "repository": "https://github.com/serde-rs/serde",
     "license": "Apache-2.0 OR MIT",
-    "version": "1.0.148"
+    "version": "1.0.149"
   },
   {
     "name": "serde_json",
@@ -123,7 +143,7 @@ export const cargoLicenses: Array<License> = [
     "name": "shellexpand",
     "repository": "https://gitlab.com/ijackson/rust-shellexpand",
     "license": "Apache-2.0 OR MIT",
-    "version": "2.1.2"
+    "version": "3.0.0"
   },
   {
     "name": "tap",
@@ -154,6 +174,18 @@ export const cargoLicenses: Array<License> = [
     "repository": "https://github.com/dtolnay/thiserror",
     "license": "Apache-2.0 OR MIT",
     "version": "1.0.37"
+  },
+  {
+    "name": "tracing",
+    "repository": "https://github.com/tokio-rs/tracing",
+    "license": "MIT",
+    "version": "0.1.37"
+  },
+  {
+    "name": "tracing-subscriber",
+    "repository": "https://github.com/tokio-rs/tracing",
+    "license": "MIT",
+    "version": "0.3.16"
   },
   {
     "name": "ts-rs",
@@ -217,7 +249,17 @@ export const npmLicenses: Array<License> = [
     "license": "MIT"
   },
   {
-    "name": "@tabler/icons@1.115.0",
+    "name": "@parcel/config-default@2.8.1",
+    "repository": "https://github.com/parcel-bundler/parcel",
+    "license": "MIT"
+  },
+  {
+    "name": "@parcel/transformer-inline-string@2.8.1",
+    "repository": "https://github.com/parcel-bundler/parcel",
+    "license": "MIT"
+  },
+  {
+    "name": "@tabler/icons@1.116.1",
     "repository": "https://github.com/tabler/tabler-icons",
     "license": "MIT"
   },
@@ -267,12 +309,17 @@ export const npmLicenses: Array<License> = [
     "license": "MIT"
   },
   {
+    "name": "i18next@22.4.2",
+    "repository": "https://github.com/i18next/i18next",
+    "license": "MIT"
+  },
+  {
     "name": "lodash@4.17.21",
     "repository": "https://github.com/lodash/lodash",
     "license": "MIT"
   },
   {
-    "name": "parcel@2.8.0",
+    "name": "parcel@2.8.1",
     "repository": "https://github.com/parcel-bundler/parcel",
     "license": "MIT"
   },
@@ -287,7 +334,12 @@ export const npmLicenses: Array<License> = [
     "license": "MIT"
   },
   {
-    "name": "react-router-dom@6.4.4",
+    "name": "react-i18next@12.1.1",
+    "repository": "https://github.com/i18next/react-i18next",
+    "license": "MIT"
+  },
+  {
+    "name": "react-router-dom@6.4.5",
     "repository": "https://github.com/remix-run/react-router",
     "license": "MIT"
   },
@@ -312,7 +364,7 @@ export const npmLicenses: Array<License> = [
     "license": "MIT"
   },
   {
-    "name": "typescript@4.9.3",
+    "name": "typescript@4.9.4",
     "repository": "https://github.com/Microsoft/TypeScript",
     "license": "Apache-2.0"
   }

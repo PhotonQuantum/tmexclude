@@ -1,6 +1,6 @@
-'use client';
 import {ReactElement} from "react";
 import {IconChartBubble, IconFolders, IconHomeSearch, IconSettings, IconTemplate} from "@tabler/icons";
+import {TFunction} from "i18next";
 
 export type NavLink = {
   kind: "link", title: string, icon: ReactElement, href: string
@@ -12,38 +12,38 @@ export type NavTitle = {
 
 export type NavItem = NavLink | NavTitle
 
-export const routes: NavItem[] = [{
+export const routes: (t: TFunction) => Array<NavItem> = (t: TFunction) => [{
   kind: "title",
-  title: "Overview"
+  title: t('overview')
 }, {
   kind: "link",
-  title: "Statistics",
+  title: t('statistics'),
   icon: <IconChartBubble size={16} strokeWidth={1.5}/>,
   href: "/main/stats"
 }, {
   kind: "title",
-  title: "Settings"
+  title: t('settings')
 }, {
   kind: "link",
-  title: "General",
+  title: t('general'),
   icon: <IconSettings size={16} strokeWidth={1.5}/>,
   href: "/main/general"
 }, {
   kind: "link",
-  title: "Rules",
+  title: t('rules'),
   icon: <IconTemplate size={16} strokeWidth={1.5}/>,
   href: "/main/rules"
 }, {
   kind: "link",
-  title: "Directories",
+  title: t('directories'),
   icon: <IconFolders size={16} strokeWidth={1.5}/>,
   href: "/main/directories"
 }, {
   kind: "title",
-  title: "Actions"
+  title: t('actions')
 }, {
   kind: "link",
-  title: "Scan",
+  title: t('scan'),
   icon: <IconHomeSearch size={16} strokeWidth={1.5}/>,
   href: "/main/scan"
 },];

@@ -1,4 +1,3 @@
-'use client';
 import {
   Badge,
   Box,
@@ -20,6 +19,7 @@ import {open} from "@tauri-apps/api/dialog";
 import _ from "lodash";
 import {createScopedKeydownHandler} from "@mantine/utils";
 import {PathText} from "../../components/PathText";
+import {useTranslation} from "react-i18next";
 
 const buttonStyles = {
   root: {paddingRight: 7},
@@ -43,6 +43,8 @@ const WatchedDirItem = React.memo(({
                                      rules,
                                      ruleNames
                                    }: WatchedDirItemProps) => {
+  const {t} = useTranslation();
+
   const setValue = useSetRecoilState(perDirState(path));
   const setDirs = useSetRecoilState(dirsState);
   const [popOverOpened, setPopOverOpened] = useState(false);
@@ -97,7 +99,7 @@ const WatchedDirItem = React.memo(({
               })
             }}
           />
-          <Button color={"red"} onClick={removeDir}>Remove Directory</Button>
+          <Button color={"red"} onClick={removeDir}>{t('remove_directory')}</Button>
         </Stack>
       </>
     </Popover.Dropdown>
@@ -105,8 +107,11 @@ const WatchedDirItem = React.memo(({
 }, _.isEqual);
 
 const WatchedDir = () => {
+  const {t} = useTranslation();
+
   const ruleNames = useRecoilValue(ruleNamesState);
   const [dirs, setDirs] = useRecoilState(dirsState);
+
   const addDir = async () => {
     const selected = await open({
       directory: true
@@ -124,7 +129,7 @@ const WatchedDir = () => {
     }
   }
   return (<>
-    <Text>Directories to watch and scan</Text>
+    <Text>{t('directories_to_watch_and_scan')}</Text>
     <ScrollArea sx={{flexGrow: 1, flexBasis: 0}}>
       <Table highlightOnHover>
         <tbody>
@@ -143,12 +148,15 @@ const WatchedDir = () => {
 }
 
 const SkippedDirs = () => {
+  const {t} = useTranslation();
+
   const [skipped, setSkipped] = useRecoilState(skipsState);
   const [selected, setSelected] = useState(-1);
   const {
     classes,
     cx
   } = useStyles();
+
   const addDir = async () => {
     const selected = await open({
       directory: true
@@ -169,7 +177,7 @@ const SkippedDirs = () => {
     });
   };
   return (<>
-    <Text>Skip the following paths</Text>
+    <Text>{t('skip_the_following_paths')}</Text>
     <ScrollArea sx={{flexGrow: 1, flexBasis: 0}} onKeyDown={(e) => {
       if (e.key in ["ArrowUp", "ArrowDown", " "]) {
         e.preventDefault();

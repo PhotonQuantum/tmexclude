@@ -1,12 +1,14 @@
-'use client';
 import {useRecoilValue, useResetRecoilState, useSetRecoilState} from "recoil";
 import {configChangedState, draftConfigState, finalConfigState} from "../../states";
 import {Box, Button, Group, Header, Text} from "@mantine/core";
 import {IconAdjustments} from "@tabler/icons";
 import React from "react";
-import { evDrag } from "../../utils";
+import {evDrag} from "../../utils";
+import {useTranslation} from "react-i18next";
 
 export const MainHeader = React.forwardRef<HTMLElement>((props, ref) => {
+  const {t} = useTranslation();
+
   const changed = useRecoilValue(configChangedState);
   const resetDraft = useResetRecoilState(draftConfigState);
   const draftConfig = useRecoilValue(draftConfigState);
@@ -30,11 +32,11 @@ export const MainHeader = React.forwardRef<HTMLElement>((props, ref) => {
         }} pt={2}>
           <IconAdjustments size={20} strokeWidth={1.5}/>
         </Box>
-        <Text size={"md"}>Preference</Text>
+        <Text size={"md"}>{t('preference')}</Text>
         {changed && <>
           <Box sx={{flexGrow: 1}}/>
-          <Button variant={"subtle"} compact sx={{boxShadow: "none"}} onClick={() => resetDraft()}>Reset</Button>
-          <Button compact onClick={() => setFinalConfig(draftConfig)}>Save</Button>
+          <Button variant={"subtle"} compact sx={{boxShadow: "none"}} onClick={() => resetDraft()}>{t('reset')}</Button>
+          <Button compact onClick={() => setFinalConfig(draftConfig)}>{t('save')}</Button>
         </>}
       </Group>
     </Header>)

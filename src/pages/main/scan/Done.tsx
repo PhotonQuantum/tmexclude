@@ -11,8 +11,10 @@ import {IconAlertTriangle, IconChevronLeft, IconCircleCheck, IconHomeCheck, Icon
 import {motion} from "framer-motion";
 import {fadeAnimation} from "../../../transitions";
 import {stopFullScan} from "../../../commands";
+import {Trans, useTranslation} from "react-i18next";
 
 export const Done = React.forwardRef(() => {
+  const {t} = useTranslation();
   const theme = useMantineTheme();
 
   const applyErrors = useRecoilValue(applyErrorsState);
@@ -21,7 +23,6 @@ export const Done = React.forwardRef(() => {
   const setScanPage = useSetRecoilState(scanPageState);
 
   const selectedItems = addSelection.length + removeSelection.length;
-
 
   const onBack = async () => {
     await stopFullScan();
@@ -34,7 +35,7 @@ export const Done = React.forwardRef(() => {
         <Button pos={"absolute"} size={"xs"} sx={{boxShadow: "none"}} variant={"subtle"}
                 leftIcon={<IconChevronLeft size={16} strokeWidth={1}/>}
                 onClick={onBack}>
-          Restart
+          {t('restart')}
         </Button>
         <Box sx={{flexGrow: 1}}/>
         <Group sx={{width: "100%"}} position={"center"}>
@@ -48,7 +49,7 @@ export const Done = React.forwardRef(() => {
             </ThemeIcon>
           </Group>
           <Stack spacing={"xs"}>
-            <Text size={20}>Apply Complete</Text>
+            <Text size={20}>{t('apply_complete')}</Text>
             <Group align={"end"} spacing={"xs"}>
               <Group align={"center"} spacing={"xs"}>
                 {
@@ -57,19 +58,29 @@ export const Done = React.forwardRef(() => {
                     <IconAlertTriangle size={24} strokeWidth={1} color={theme.colors.orange[3]}/>
                 }
                 <Text size={28}>
-                  {selectedItems - Object.keys(applyErrors?.errors ?? {}).length} item(s)
+                  {t('items', {count: (selectedItems - Object.keys(applyErrors?.errors ?? {}).length)})}
                 </Text>
               </Group>
-              <Text size={"xs"} color={"dimmed"} pb={4}>applied</Text>
+              <Text size={"xs"} color={"dimmed"} pb={4}>{t('applied')}</Text>
             </Group>
             {
               (applyErrors === null) ?
-                <Text size={"sm"}>Selected items has been excluded/included<br/> in TimeMachine backups.</Text> :
+                <Text size={"sm"}><Trans
+                  i18nKey="selected_items_has_been_excludedincluded_in_timema"
+                  components={{
+                    b: <br/>
+                  }}
+                /></Text> :
                 <>
-                  <Text size={"sm"}>Some items failed to be excluded/included<br/> in TimeMachine backups.</Text>
+                  <Text size={"sm"}><Trans
+                    i18nKey="some_items_failed_to_be_excludedincluded_in_timema"
+                    components={{
+                      b: <br/>
+                    }}
+                  /></Text>
                   <Button size={"xs"} variant={"light"} color={"orange"} mr={"auto"}
                           onClick={() => setScanPage("log")}>
-                    Show log
+                    {t('show_log')}
                   </Button>
                 </>
             }

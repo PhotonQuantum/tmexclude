@@ -1,4 +1,3 @@
-'use client';
 import {atom, AtomEffect, DefaultValue, selector, useRecoilValue, useSetRecoilState} from "recoil";
 import {PreConfig} from "./bindings/PreConfig";
 import _ from "lodash";
@@ -9,7 +8,17 @@ import {ScanStatus} from "./bindings/ScanStatus";
 import {ExclusionActionBatch} from "./bindings/ExclusionActionBatch";
 import {useEffect} from "react";
 import {ApplyErrors} from "./bindings/ApplyErrors";
-import {disableAutoStart, enableAutoStart, getAutoStart, getConfig, scanStatus, setConfig} from "./commands";
+import {
+  disableAutoStart,
+  enableAutoStart,
+  getAutoStart,
+  getConfig,
+  getStore,
+  scanStatus,
+  setConfig,
+  setStore
+} from "./commands";
+import i18n from "./i18n";
 
 const finalConfigEffect: AtomEffect<PreConfig | null> = ({
                                                            setSelf,
@@ -302,4 +311,39 @@ export const autoStartState = atom<boolean>({
   key: "autoStart",
   default: getAutoStart(),
   effects: [autoStartEffect,]
+})
+
+const getLanguage = async () => await getStore("language") ?? "auto";
+
+const languageEffect: AtomEffect<string> = ({onSet, setSelf}) => {
+  const onChange = (language: string) => {
+    setSelf(language);
+    i18n.changeLanguage();
+  }
+  onSet((newValue) => {
+    setStore("language", newValue);
+  });
+
+  const f = async () => {
+    if (typeof window === "undefined") {
+      return () => {
+      };
+    }
+    const listen = await import("@tauri-apps/api/event").then(tauri => tauri.listen);
+    return await listen<any>("properties_changed", ({payload}) => {
+      if ("language" in payload) {
+        onChange(payload.language);
+      }
+    });
+  }
+  const unlisten = f();
+  return () => {
+    unlisten.then(unlisten => unlisten());
+  }
+};
+
+export const languageState = atom<string>({
+  key: "language",
+  default: getLanguage(),
+  effects: [languageEffect,]
 })

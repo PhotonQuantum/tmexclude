@@ -7,8 +7,11 @@ import {motion} from "framer-motion";
 import {fadeAnimation} from "../../../transitions";
 import {PathText} from "../../../components/PathText";
 import {stopFullScan} from "../../../commands";
+import {useTranslation} from "react-i18next";
 
 export const Log = React.forwardRef(() => {
+  const {t} = useTranslation();
+
   const theme = useMantineTheme();
 
   const applyErrors = useRecoilValue(applyErrorsState);
@@ -25,7 +28,7 @@ export const Log = React.forwardRef(() => {
         <Button pos={"absolute"} size={"xs"} sx={{boxShadow: "none"}} variant={"subtle"}
                 leftIcon={<IconChevronLeft size={16} strokeWidth={1}/>}
                 onClick={onBack}>
-          Restart
+          {t('restart')}
         </Button>
         <Box sx={{flexGrow: 1}}/>
         <Group sx={{width: "100%"}} position={"center"}>
@@ -37,7 +40,7 @@ export const Log = React.forwardRef(() => {
             </ThemeIcon>
           </Group>
           <Stack sx={{width: 320}}>
-            <Text size={24}>Apply Log</Text>
+            <Text size={24}>{t('apply_log')}</Text>
             <ScrollArea.Autosize maxHeight={200} styles={{root: {borderStyle: "hidden"}}} offsetScrollbars>
               {
                 Object.entries(applyErrors?.errors ?? {}).map(([path, reason]) => (
@@ -45,7 +48,7 @@ export const Log = React.forwardRef(() => {
                     <PathText withinPortal keepFirst={3} keepLast={1} path={path} lineClamp={1}/>
                     <Tooltip multiline width={300} label={reason} withinPortal withArrow arrowSize={12}>
                       <Group spacing={"xs"} ml={"auto"}>
-                        <Text color={"dimmed"}>Failed</Text>
+                        <Text color={"dimmed"}>{t('failed')}</Text>
                         <IconAlertTriangle size={16} strokeWidth={1} color={theme.colors.orange[3]}/>
                       </Group>
                     </Tooltip>
@@ -55,7 +58,7 @@ export const Log = React.forwardRef(() => {
             </ScrollArea.Autosize>
             <Button size={"xs"} variant={"light"} color={"orange"} mr={"auto"}
                     onClick={() => setScanPage("done")}>
-              Hide log
+              {t('hide_log')}
             </Button>
           </Stack>
         </Group>

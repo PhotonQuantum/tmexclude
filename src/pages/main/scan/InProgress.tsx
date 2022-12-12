@@ -1,4 +1,3 @@
-'use client';
 import {motion} from "framer-motion";
 import {useRecoilValue} from "recoil";
 import {scanCurrentState} from "../../../states";
@@ -9,8 +8,11 @@ import {useAnimateStyles} from "../../../utils";
 import {fadeAnimation} from "../../../transitions";
 import {PathText} from "../../../components/PathText";
 import {stopFullScan} from "../../../commands";
+import {useTranslation} from "react-i18next";
 
 export const InProgress = React.forwardRef(() => {
+  const {t} = useTranslation();
+
   const {
     found,
     path
@@ -26,10 +28,10 @@ export const InProgress = React.forwardRef(() => {
           <IconSearch size={72} strokeWidth={1} className={classes.circle}/>
         </ThemeIcon>
         <Stack spacing={"xs"} align={"center"}>
-          <Text size={"xl"}>Scanning system...</Text>
+          <Text size={"xl"}>{t('scanning_system')}</Text>
           <PathText size={"sm"} color={moreDimmed} align={"center"} lineClamp={1} keepFirst={4} keepLast={2}
                     path={path}/>
-          <Text size={"sm"} color={"dimmed"}>Found {found} file(s)</Text>
+          <Text size={"sm"} color={"dimmed"}>{t('found_files', {count: found})}</Text>
           <ActionIcon variant={"default"} radius={16} size={32} onClick={stopFullScan}>
             <IconSquare size={16} strokeWidth={1.5}/>
           </ActionIcon>

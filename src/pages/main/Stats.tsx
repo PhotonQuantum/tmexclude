@@ -1,4 +1,3 @@
-'use client';
 import {Box, Card, Container, Group, Stack, Text, ThemeIcon, Title} from "@mantine/core";
 import {IconCheck, IconDots, IconFileMinus, IconFilePlus, IconRadar} from "@tabler/icons";
 import useSWR from 'swr'
@@ -6,14 +5,21 @@ import {Metrics} from "../../bindings/Metrics";
 import ReactTimeago from "react-timeago";
 import {PathText} from "../../components/PathText";
 import {swrFetcher} from "../../utils";
+import {Trans, useTranslation} from "react-i18next";
+import {zh_CN_formatter} from "../../i18n";
 
 export const Stats = () => {
+  const {t, i18n} = useTranslation();
+
   const {data} = useSWR<Metrics>("metrics", swrFetcher);
+
+  const formatter = i18n.language === "zh-CN" ? zh_CN_formatter : undefined;
+
   return (<Container>
     <Stack py={"xl"}>
       <Box pl={"xl"} pb={"xl"}>
-        <Title order={2}>Looks good!</Title>
-        <Text size={"sm"}>TimeMachine Exclude is running.</Text>
+        <Title order={2}>{t('looks_good')}</Title>
+        <Text size={"sm"}>{t('timemachine_exclude_is_running')}</Text>
       </Box>
       <Card radius={"lg"} withBorder>
         <Group>
@@ -26,9 +32,9 @@ export const Stats = () => {
               <ThemeIcon size={16} variant={"outline"} radius={"xl"} color={"green"}>
                 <IconCheck size={12} strokeWidth={3}/>
               </ThemeIcon>
-              <Text size={"xl"}>{data?.["files-excluded"]} Files</Text>
+              <Text size={"xl"}>{t('files', {'count': data?.["files-excluded"]})}</Text>
             </Group>
-            <Text size={"sm"} color={"dimmed"}>have been excluded from TimeMachine backups</Text>
+            <Text size={"sm"} color={"dimmed"}>{t('have_been_excluded_from_timemachine_backups')}</Text>
           </Box>
         </Group>
       </Card>
@@ -43,10 +49,9 @@ export const Stats = () => {
               <ThemeIcon size={16} variant={"outline"} radius={"xl"} color={"green"}>
                 <IconCheck size={12} strokeWidth={3}/>
               </ThemeIcon>
-              <Text size={"xl"}>{data?.["files-included"]} Files</Text>
+              <Text size={"xl"}>{t('files', {'count': data?.["files-included"]})}</Text>
             </Group>
-            <Text size={"sm"} color={"dimmed"}>have been
-              re-included into TimeMachine backups</Text>
+            <Text size={"sm"} color={"dimmed"}>{t('have_been_reincluded_into_timemachine_backups')}</Text>
           </Box>
         </Group>
       </Card>
@@ -65,8 +70,10 @@ export const Stats = () => {
                         keepFirst={4} keepLast={2}/>
             </Group>
             <Text size={"sm"} color={"dimmed"}>{(data && data["last-excluded-time"] !== 0) ? <span>
-                was excluded {<ReactTimeago date={data["last-excluded-time"] * 1000}/>}
-              </span> : "no files have been excluded yet"}</Text>
+              <Trans i18nKey={"was_excluded"}>
+                was excluded <ReactTimeago formatter={formatter} date={data["last-excluded-time"] * 1000}/>
+              </Trans>
+              </span> : t("no_files_have_been_excluded_yet")}</Text>
           </Box>
         </Group>
       </Card>

@@ -4,11 +4,13 @@ import {BuildMeta} from "../bindings/BuildMeta";
 import {Box, Container, Divider, Group, Image, Stack, Text, Title} from "@mantine/core";
 // @ts-ignore
 import icon from "../assets/tmexclude.png";
+import {Trans, useTranslation} from "react-i18next";
 
 export const About = () => {
+  const {t} = useTranslation();
+
   const {data} = useSWR<BuildMeta>("build_meta", swrFetcher);
   const date = new Date(data?.timestamp ?? 0);
-  const dateString = date.toLocaleDateString();
   const buildYear = date.getUTCFullYear();
 
   const openAck = async () => {
@@ -35,7 +37,7 @@ export const About = () => {
           <Stack spacing={"xs"}>
             <Stack spacing={0}>
               <Title order={4}>TimeMachine Exclude</Title>
-              <Text size={"xs"}>Build {data?.version ?? "unknown"}, built on {dateString}</Text>
+              <Text size={"xs"}>{t('build', {version: data?.version ?? "unknown", date})}</Text>
             </Stack>
             <Divider/>
             <Text size={"xs"}>
@@ -44,17 +46,21 @@ export const About = () => {
             </A>
             </Text>
             <Divider/>
-            <Title order={6}>Contact Me</Title>
+            <Title order={6}>{t('contact_me')}</Title>
             <Text size={"xs"}>
               Github - <A href={"https://github.com/PhotonQuantum"}>@PhotonQuantum</A><br/>
               Twitter - <A href={"https://twitter.com/LightQuantumhah"}>@LightQuantumhah</A>
             </Text>
             <Divider/>
             <Text size={"xs"}>
-              Licensed under <Text span inline sx={{cursor: "pointer"}} c={"blue"}
-                                   onClick={openLicense}>MIT License</Text><br/>
-              Powered by <Text span inline sx={{cursor: "pointer"}} c={"blue"}
-                               onClick={openAck}>open-source software</Text><br/>
+              <Trans i18nKey={"licensed_under"}>
+                Licensed under <Text span inline sx={{cursor: "pointer"}} c={"blue"}
+                                     onClick={openLicense}>MIT License</Text>
+              </Trans><br/>
+              <Trans i18nKey={"powered_by"}>
+                Powered by <Text span inline sx={{cursor: "pointer"}} c={"blue"}
+                                 onClick={openAck}>open-source software</Text>
+              </Trans><br/>
               Copyright © {buildYear} <A href={"https://github.com/PhotonQuantum"}>LightQuantum</A>
             </Text>
           </Stack>

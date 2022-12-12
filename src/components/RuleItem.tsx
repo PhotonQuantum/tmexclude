@@ -1,4 +1,3 @@
-'use client';
 import {Accordion, ActionIcon, Group, Menu, MultiSelect, SegmentedControl, Stack, Text, TextInput} from "@mantine/core";
 import {IconDots, IconPencil, IconTrash} from "@tabler/icons";
 import {useSetRecoilState} from "recoil";
@@ -6,6 +5,7 @@ import {perRuleState, rulesState} from "../states";
 import React, {useState} from "react";
 import {PreRule} from "../bindings/PreRule";
 import _ from "lodash";
+import {useTranslation} from "react-i18next";
 
 type RuleItemProps = {
   name: string, value: PreRule, allPaths: string[], ruleNames: string[],
@@ -17,6 +17,8 @@ export const RuleItem = React.memo(({
                                       allPaths,
                                       ruleNames
                                     }: RuleItemProps) => {
+  const {t} = useTranslation();
+
   const setRules = useSetRecoilState(rulesState);
   const setValue = useSetRecoilState(perRuleState(name));
   const [renaming, setRenaming] = useState(false);
@@ -102,10 +104,10 @@ export const RuleItem = React.memo(({
           <ActionIcon size={"lg"}><IconDots size={16}/></ActionIcon>
         </Menu.Target>
         <Menu.Dropdown>
-          <Menu.Item icon={<IconPencil size={14}/>} onClick={() => startRename(name)}>Rename</Menu.Item>
+          <Menu.Item icon={<IconPencil size={14}/>} onClick={() => startRename(name)}>{t('rename')}</Menu.Item>
           <Menu.Item color={"red"}
                      icon={<IconTrash size={14}/>}
-                     onClick={deleteRule}>Delete</Menu.Item>
+                     onClick={deleteRule}>{t('delete')}</Menu.Item>
         </Menu.Dropdown>
       </Menu>
     </Group>
@@ -114,10 +116,10 @@ export const RuleItem = React.memo(({
         <SegmentedControl
           size={"xs"}
           data={[{
-            label: "Merge Rule",
+            label: t("merge_rule"),
             value: "merge"
           }, {
-            label: "Concrete Rule",
+            label: t("concrete_rule"),
             value: "concrete"
           }]}
           value={Array.isArray(value) ? "merge" : "concrete"}
@@ -130,9 +132,9 @@ export const RuleItem = React.memo(({
           onChange={(newMergeRule) => {
             setValue(newMergeRule);
           }}
-          placeholder={"Pick all sub-rules to merge"}
+          placeholder={t("pick_merge_rules")!}
         />) : (<>
-          <Text size="sm">Paths to exclude</Text>
+          <Text size="sm">{t('paths_to_exclude')}</Text>
           <MultiSelect searchable creatable
                        getCreateLabel={(value) => `+ New ${value}`}
                        data={allPaths.map((v) => ({
@@ -148,7 +150,7 @@ export const RuleItem = React.memo(({
                        }}
           />
           <Text size="sm">
-            ... only if any of these paths exists in the same directory
+            {t('only_if_any_of_these_paths_exists_in_the_same_dire')}
           </Text>
           <MultiSelect searchable creatable
                        getCreateLabel={(value) => `+ New ${value}`}

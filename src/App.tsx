@@ -14,6 +14,7 @@ import {Rules} from "./pages/main/Rules";
 import {About} from "./pages/About";
 import {Ack} from "./pages/Ack";
 import {License} from "./pages/License";
+import {Suspense} from "react";
 
 const router = createBrowserRouter([
   {
@@ -132,7 +133,9 @@ export const App = () => {
       >
         <RecoilRoot>
           <SyncActionBatch/>
-          <RouterProvider router={router}/>
+          <Suspense>
+            <RouterProvider router={router}/>
+          </Suspense>
         </RecoilRoot>
       </MantineProvider>
     </SWRConfig>

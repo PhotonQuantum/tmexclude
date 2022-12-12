@@ -1,8 +1,8 @@
-'use client';
 import {Checkbox, packSx, ScrollArea, ScrollAreaProps, Sx, Table, TextInput} from "@mantine/core";
 import React, {useEffect, useMemo, useState} from "react";
 import {PathText} from "./PathText";
 import {useTableStyles} from "../utils";
+import {useTranslation} from "react-i18next";
 
 export interface SelectionTableProps extends Omit<ScrollAreaProps, "onChange"> {
   data: Array<string>,
@@ -23,6 +23,7 @@ export const SelectionTable = React.memo(({
                                             ...props
                                           }: SelectionTableProps) => {
   const {classes, cx} = useTableStyles();
+  const {t} = useTranslation();
 
   const allSelected = selection.length === data.length;
   const toggleAll = () => {
@@ -57,7 +58,7 @@ export const SelectionTable = React.memo(({
               size={"xs"}
               value={filter}
               onChange={ev => setFilter(ev.currentTarget.value)}
-              placeholder={"Filter..."}
+              placeholder={t("filter")!}
             />
           </th>
         </tr>

@@ -1,43 +1,48 @@
 import {Box, Container, Group, ScrollArea, Table, Tabs, Text} from "@mantine/core";
 import {cargoLicenses, License, npmLicenses} from "../licenses";
 import {useViewportSize} from "@mantine/hooks";
+import {useTranslation} from "react-i18next";
 
 const A = (props: { href: string, children: React.ReactNode }) => (
   <Text inline sx={{cursor: "pointer"}} c={"blue"} component={"a"} target={"_blank"} {...props}/>
 )
 
-const DepTab = ({deps}: { deps: Array<License> }) => (
-  <ScrollArea sx={{height: "100%"}}>
-    <Table highlightOnHover>
-      <thead>
-      <tr>
-        <th>Package</th>
-        <th>License</th>
-      </tr>
-      </thead>
-      <tbody>
-      {
-        deps.map(({name, license, repository, version}) => (
-          <tr key={name}>
-            <td>
-              <Group spacing={"xs"}>
-                {
-                  repository !== null ?
-                    <A href={repository}>{name}</A>
-                    :
-                    <Text>{name}</Text>
-                }
-                {version && <Text span inline inherit color={"dimmed"}>{version}</Text>}
-              </Group>
-            </td>
-            <td><Text>{license}</Text></td>
-          </tr>
-        ))
-      }
-      </tbody>
-    </Table>
-  </ScrollArea>
-)
+const DepTab = ({deps}: { deps: Array<License> }) => {
+  const {t} = useTranslation();
+
+  return (
+    <ScrollArea sx={{height: "100%"}}>
+      <Table highlightOnHover>
+        <thead>
+        <tr>
+          <th>{t('package')}</th>
+          <th>{t('license')}</th>
+        </tr>
+        </thead>
+        <tbody>
+        {
+          deps.map(({name, license, repository, version}) => (
+            <tr key={name}>
+              <td>
+                <Group spacing={"xs"}>
+                  {
+                    repository !== null ?
+                      <A href={repository}>{name}</A>
+                      :
+                      <Text>{name}</Text>
+                  }
+                  {version && <Text span inline inherit color={"dimmed"}>{version}</Text>}
+                </Group>
+              </td>
+              <td><Text>{license}</Text></td>
+            </tr>
+          ))
+        }
+        </tbody>
+      </Table>
+    </ScrollArea>
+  )
+}
 
 export const Ack = () => {
   const {height: vh} = useViewportSize();

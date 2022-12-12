@@ -1,5 +1,3 @@
-'use client';
-
 import {PreConfig} from "./bindings/PreConfig";
 import {ScanStatus} from "./bindings/ScanStatus";
 import {ExclusionActionBatch} from "./bindings/ExclusionActionBatch";
@@ -23,6 +21,14 @@ export const disableAutoStart = async () => {
 
 export const getAutoStart = async () => {
   return await invoke<boolean>('plugin:auto_launch|is_enabled') ?? false;
+}
+
+export const getStore = async (key: string) => {
+  return await invoke<string | null>("store_get", {key});
+}
+
+export const setStore = async (key: string, value: any) => {
+  return await invoke<void>("store_set", {key, value});
 }
 
 export const getConfig = async () => {

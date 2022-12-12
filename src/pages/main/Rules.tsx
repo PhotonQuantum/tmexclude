@@ -1,4 +1,3 @@
-'use client';
 import {Accordion, Box, Button, Container, Group, Popover, ScrollArea, Stack, Text, TextInput} from "@mantine/core";
 import {IconPlus, IconTemplate} from "@tabler/icons";
 import {useRecoilValue, useSetRecoilState} from "recoil";
@@ -6,8 +5,11 @@ import {allPathsState, ruleNamesState, rulesState} from "../../states";
 import {useState} from "react";
 import {useElementSize} from "@mantine/hooks";
 import {RuleItem} from "../../components/RuleItem";
+import {useTranslation} from "react-i18next";
 
 const AddButton = () => {
+  const {t} = useTranslation();
+
   const [addPop, setAddPop] = useState(false);
   const [name, setName] = useState("");
   const ruleNames = useRecoilValue(ruleNamesState);
@@ -34,11 +36,11 @@ const AddButton = () => {
     <Popover.Target>
       <Button ref={ref} variant={"default"} size={"xs"} leftIcon={<IconPlus size={16}/>}
               onClick={() => setAddPop(true)}>
-        Add Rule
+        {t('add_rule')}
       </Button>
     </Popover.Target>
     <Popover.Dropdown mr={"md"}>
-      <TextInput size={"xs"} placeholder={"Rule name"} value={name} error={!validateName(name) && name !== ""}
+      <TextInput size={"xs"} placeholder={t("rule_name")!} value={name} error={!validateName(name) && name !== ""}
                  onChange={(ev) => {
                    setName(ev.currentTarget.value);
                  }}
@@ -63,14 +65,15 @@ export const Rules = () => {
   const ruleNames = useRecoilValue(ruleNamesState);
   const rules = useRecoilValue(rulesState);
   const allPaths = useRecoilValue(allPathsState);
+  const {t} = useTranslation();
   return (<Container sx={{height: "100%"}}>
     <Stack py={"xl"} sx={{height: "100%"}}>
       <Group sx={{flexWrap: "nowrap"}}>
         <Box><IconTemplate size={32} strokeWidth={1}/></Box>
         <Box sx={{flexGrow: 1}}>
-          <Text>Exclude paths that match these patterns</Text>
+          <Text>{t('exclude_paths_that_match_these_patterns')}</Text>
           <Text size={"sm"} color={"dimmed"}>
-            Patterns must be applied by at least one directory to take effect.
+            {t('patterns_must_be_applied_by_at_least_one_directory')}
           </Text>
         </Box>
         <AddButton/>

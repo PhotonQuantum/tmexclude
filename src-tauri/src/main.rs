@@ -23,6 +23,7 @@ use window_vibrancy::NSVisualEffectMaterial;
 
 use tmexclude_lib::{
     ApplyErrors, ConfigManager, ExclusionActionBatch, Metrics, Mission, PreConfig, ScanStatus,
+    Store,
 };
 
 use crate::decorations::WindowExt;
@@ -32,7 +33,6 @@ use crate::plugins::{BackgroundPlugin, EnvironmentPlugin};
 mod decorations;
 mod metadata;
 mod plugins;
-mod utils;
 
 #[tauri::command]
 #[instrument(skip(mission))]
@@ -82,6 +82,24 @@ async fn apply_action_batch(batch: ExclusionActionBatch) -> Result<(), ApplyErro
     })
     .await
     .expect("spawn_blocking failed")
+}
+
+#[tauri::command]
+#[instrument(skip(mission))]
+fn store_get(mission: tauri::State<Arc<Mission>>, key: &str) -> Option<serde_json::Value> {
+    mission.store_get(key)
+}
+
+#[tauri::command]
+#[instrument(skip(mission))]
+fn store_set(mission: tauri::State<Arc<Mission>>, key: String, value: serde_json::Value) {
+    mission.store_set(key, value)
+}
+
+#[tauri::command]
+#[instrument(skip(mission))]
+fn store_del(mission: tauri::State<Arc<Mission>>, key: &str) {
+    mission.store_del(key)
 }
 
 fn system_tray() -> SystemTray {
@@ -158,11 +176,16 @@ fn main() {
             start_full_scan,
             stop_full_scan,
             apply_action_batch,
-            build_meta
+            build_meta,
+            store_get,
+            store_set,
+            store_del
         ])
         .setup(move |app| {
+            let store = Store::new(&app.path_resolver().app_config_dir().unwrap());
             app.manage(
-                Mission::new_arc(app.handle(), config_manager).expect("failed to create mission"),
+                Mission::new_arc(app.handle(), config_manager, store)
+                    .expect("failed to create mission"),
             );
             let main_window = app.get_window("main").unwrap();
             window_vibrancy::apply_vibrancy(

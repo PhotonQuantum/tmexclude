@@ -1,4 +1,3 @@
-'use client';
 import {useRecoilValue} from "recoil";
 import {scanPageState, scanStepState} from "../../states";
 import {Overview} from "./scan/Overview";
