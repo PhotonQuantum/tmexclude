@@ -1,7 +1,7 @@
 {
   "name": "tmexclude",
   "source": "src/index.html",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "scripts": {
     "dev": "parcel serve src/index.html -p 1420",
     "build": "parcel build src/index.html",
