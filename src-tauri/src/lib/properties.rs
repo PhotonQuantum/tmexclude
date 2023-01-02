@@ -21,7 +21,7 @@ fn read_from_path(path: &Path) -> Map<String, Value> {
     if path.exists() {
         serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap_or_else(|e| {
             error!(?e, ".properties file is corrupted, deleting it");
-            std::fs::remove_file(&path).unwrap();
+            std::fs::remove_file(path).unwrap();
             Default::default()
         })
     } else {
@@ -51,12 +51,12 @@ impl Store {
         let mut data = self.data.lock();
         data.insert(key, value);
         std::fs::write(&self.path, serde_json::to_vec(&*data).unwrap()).unwrap();
-        let _ = handle.emit_all("properties_changed", data.clone());
+        drop(handle.emit_all("properties_changed", data.clone()));
     }
     pub fn del<R: Runtime>(&self, handle: &AppHandle<R>, key: &str) {
         let mut data = self.data.lock();
         data.remove(key);
         std::fs::write(&self.path, serde_json::to_vec(&*data).unwrap()).unwrap();
-        let _ = handle.emit_all("properties_changed", data.clone());
+        drop(handle.emit_all("properties_changed", data.clone()));
     }
 }

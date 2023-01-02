@@ -16,17 +16,59 @@ use tracing::{debug, warn};
 
 use crate::config::{Directory, Rule, WalkConfig};
 use crate::skip_cache::CachedPath;
-use crate::tmutil::{is_excluded, ExclusionAction, ExclusionActionBatch};
+use crate::tmutil::{is_excluded, is_nodump, ExclusionAction, ExclusionActionBatch};
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+enum ExcludeState {
+    /// The path is currently excluded from backups.
+    Excluded,
+    /// The path is currently excluded from backups.
+    Included,
+    /// The exclude state of the path is unknown (conflict between TimeMachine and NODUMP).
+    Inconsistent,
+}
+
+impl ExcludeState {
+    pub fn is_excluded(&self) -> bool {
+        matches!(self, Self::Excluded)
+    }
+}
+
+fn check_f(support_dump: bool) -> fn(&Path) -> std::io::Result<ExcludeState> {
+    if support_dump {
+        |path| {
+            let excluded = is_excluded(path)?;
+            let nodump = is_nodump(path)?;
+            Ok(match (excluded, nodump) {
+                (true, true) => ExcludeState::Excluded,
+                (false, false) => ExcludeState::Included,
+                _ => ExcludeState::Inconsistent,
+            })
+        }
+    } else {
+        |path| {
+            let excluded = is_excluded(path)?;
+            Ok(if excluded {
+                ExcludeState::Excluded
+            } else {
+                ExcludeState::Included
+            })
+        }
+    }
+}
 
 /// Walk through a directory with given rules recursively and return an exclusion action plan.
 #[allow(clippy::needless_pass_by_value)]
 #[must_use]
 pub fn walk_recursive(
     config: WalkConfig,
+    support_dump: bool,
     curr_tx: Sender<PathBuf>,
     found: Arc<AtomicUsize>,
     abort: Arc<AtomicBool>,
 ) -> ExclusionActionBatch {
+    let check = check_f(support_dump);
+
     let batch_queue = Arc::new(SegQueue::new());
     {
         let batch_queue = batch_queue.clone();
@@ -80,7 +122,7 @@ pub fn walk_recursive(
                                 entry.read_children_path = None;
                                 None
                             } else {
-                                Some((entry, is_excluded(&path).ok()?))
+                                Some((entry, check(&path).ok()?))
                             }
                         })
                         .collect_vec();
@@ -96,9 +138,11 @@ pub fn walk_recursive(
                     found.fetch_add(diff.count(), Ordering::Relaxed);
 
                     // Exclude already excluded or uncovered children.
-                    for (entry, excluded) in children {
+                    for (entry, state) in children {
                         let path = entry.path();
-                        if (excluded && !diff.remove.contains(&path)) || diff.add.contains(&path) {
+                        if (state.is_excluded() && !diff.remove.contains(&path))
+                            || diff.add.contains(&path)
+                        {
                             entry.read_children_path = None;
                         }
                     }
@@ -124,8 +168,11 @@ pub fn walk_recursive(
 pub fn walk_non_recursive(
     root: &Path,
     config: &WalkConfig,
+    support_dump: bool,
     skip_cache: &Cache<PathBuf, ()>,
 ) -> ExclusionActionBatch {
+    let check = check_f(support_dump);
+
     if skip_cache.get::<CachedPath>(root.into()).is_some() {
         // Skip cache hit, early exit.
         return ExclusionActionBatch::default();
@@ -150,7 +197,7 @@ pub fn walk_non_recursive(
 
     if root
         .ancestors()
-        .any(|path| is_excluded(path).unwrap_or(false))
+        .any(|path| check(path).map(|s| s.is_excluded()).unwrap_or(false))
     {
         // One of its parents is excluded.
         // Note that we don't put this dir into cache because the exclusion state of ancestors is unknown.
@@ -174,7 +221,7 @@ pub fn walk_non_recursive(
                     } else {
                         Some((
                             PathBuf::from(path.file_name().expect("file name").to_os_string()),
-                            is_excluded(&path).ok()?,
+                            check(&path).ok()?,
                         ))
                     }
                 })
@@ -190,7 +237,7 @@ pub fn walk_non_recursive(
 
 fn generate_diff<'a, 'b>(
     cwd: &'a Path,
-    shallow_list: &'a HashMap<PathBuf, bool>,
+    shallow_list: &'a HashMap<PathBuf, ExcludeState>,
     directories: impl IntoIterator<Item = &'b Directory>,
 ) -> ExclusionActionBatch {
     let candidate_rules: Vec<&Rule> = directories
@@ -210,8 +257,12 @@ fn generate_diff<'a, 'b>(
                             .any(|if_exist| shallow_list.contains_key(if_exist.as_path())))
             });
             match (expected_excluded, *excluded) {
-                (true, false) => Some(ExclusionAction::Add(cwd.join(name))),
-                (false, true) => Some(ExclusionAction::Remove(cwd.join(name))),
+                (true, ExcludeState::Included | ExcludeState::Inconsistent) => {
+                    Some(ExclusionAction::Add(cwd.join(name)))
+                }
+                (false, ExcludeState::Excluded | ExcludeState::Inconsistent) => {
+                    Some(ExclusionAction::Remove(cwd.join(name)))
+                }
                 _ => None,
             }
         })

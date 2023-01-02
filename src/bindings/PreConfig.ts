@@ -2,4 +2,4 @@
 import type { PreDirectory } from "./PreDirectory";
 import type { PreRule } from "./PreRule";
 
-export interface PreConfig { "no-include": boolean, directories: Array<PreDirectory>, skips: Array<string>, rules: Record<string, PreRule>, }
+export interface PreConfig { "no-include": boolean, "support-dump": boolean, directories: Array<PreDirectory>, skips: Array<string>, rules: Record<string, PreRule>, }

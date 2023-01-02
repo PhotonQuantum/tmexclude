@@ -49,6 +49,7 @@ pub async fn watch_task(mission: Weak<Mission>) -> io::Result<()> {
         .iter()
         .map(|directory| directory.path.as_path());
     let no_include = config.no_include;
+    let support_dump = config.support_dump;
 
     let (mut stream, event_handle) = create_event_stream(
         paths,
@@ -68,7 +69,8 @@ pub async fn watch_task(mission: Weak<Mission>) -> io::Result<()> {
                     let cache = cache.clone();
                     let metrics = metrics.clone();
                     move || {
-                        let mut batch = walk_non_recursive(&item.path, &walk_config, &cache);
+                        let mut batch =
+                            walk_non_recursive(&item.path, &walk_config, support_dump, &cache);
                         if batch.is_empty() {
                             return;
                         }
@@ -81,7 +83,7 @@ pub async fn watch_task(mission: Weak<Mission>) -> io::Result<()> {
                         if let Some(last_file) = batch.add.last() {
                             metrics.set_last_excluded(last_file.as_path());
                         }
-                        if let Err(errors) = batch.apply() {
+                        if let Err(errors) = batch.apply(support_dump) {
                             for (path, e) in errors {
                                 error!("Error when applying on file {}: {}", path.display(), e);
                             }

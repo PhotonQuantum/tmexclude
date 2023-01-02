@@ -57,6 +57,8 @@ pub enum ApplyError {
     InvalidURL,
     #[error("Failed to apply rule: {0}")]
     PropertyFail(#[from] CFError),
+    #[error("Failed to apply rule: {0}")]
+    IO(#[from] std::io::Error),
 }
 
 #[derive(Serialize, TS)]

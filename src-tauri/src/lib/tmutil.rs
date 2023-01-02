@@ -1,7 +1,9 @@
 //! Utils needed to operate on `TimeMachine`.
 use std::borrow::Borrow;
 use std::collections::HashMap;
+use std::ffi::CString;
 use std::ops::{Add, AddAssign};
+use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 use std::ptr;
 
@@ -31,6 +33,52 @@ pub fn is_excluded(path: impl AsRef<Path>) -> std::io::Result<bool> {
     )
 }
 
+const UF_NODUMP: u32 = 0x0000_0001;
+
+/// Check whether a path is excluded from DUMP.
+///
+/// # Errors
+/// `io::Error` if can't stat on given file.
+pub fn is_nodump(path: impl AsRef<Path>) -> std::io::Result<bool> {
+    let path = CString::new(path.as_ref().as_os_str().as_bytes()).expect("path contains null byte");
+    let stat = unsafe {
+        let mut stat: libc::stat = std::mem::zeroed();
+        let ret = libc::stat(path.as_ptr(), &mut stat);
+        if ret != 0 {
+            return Err(std::io::Error::last_os_error());
+        }
+        stat
+    };
+    Ok(stat.st_flags & UF_NODUMP != 0)
+}
+
+/// Set NODUMP flag on a path.
+///
+/// # Errors
+/// `io::Error` if can't stat or chflags on given file.
+pub fn set_nodump(path: impl AsRef<Path>, value: bool) -> std::io::Result<()> {
+    let path = CString::new(path.as_ref().as_os_str().as_bytes()).expect("path contains null byte");
+    let mut stat = unsafe {
+        let mut stat: libc::stat = std::mem::zeroed();
+        let ret = libc::stat(path.as_ptr(), &mut stat);
+        if ret != 0 {
+            return Err(std::io::Error::last_os_error());
+        }
+        stat
+    };
+    if value {
+        stat.st_flags |= UF_NODUMP;
+    } else {
+        stat.st_flags &= !UF_NODUMP;
+    }
+    let ret = unsafe { libc::chflags(path.as_ptr(), stat.st_flags) };
+    if ret == 0 {
+        Ok(())
+    } else {
+        Err(std::io::Error::last_os_error())
+    }
+}
+
 /// Represents a batch of tmutil modifications.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, TS)]
 #[ts(export, export_to = "../src/bindings/")]
@@ -53,21 +101,24 @@ impl ExclusionActionBatch {
         self.add.len() + self.remove.len()
     }
     /// Apply the batch.
-    pub fn apply(self) -> Result<(), HashMap<PathBuf, ApplyError>> {
+    ///
+    /// # Errors
+    /// Return batched errors if any.
+    pub fn apply(self, support_dump: bool) -> Result<(), HashMap<PathBuf, ApplyError>> {
         let errors: HashMap<_, _> = self
             .add
             .into_iter()
             .filter_map(|path| {
                 info!("Excluding {:?} from backups", path);
                 ExclusionAction::Add(path.clone())
-                    .apply()
+                    .apply(support_dump)
                     .err()
                     .map(|e| (path, e))
             })
             .chain(self.remove.into_iter().filter_map(|path| {
                 info!("Including {:?} in backups", path);
                 ExclusionAction::Remove(path.clone())
-                    .apply()
+                    .apply(support_dump)
                     .err()
                     .map(|e| (path, e))
             }))
@@ -122,9 +173,10 @@ pub enum ExclusionAction {
 
 impl ExclusionAction {
     /// Apply the action.
-    pub fn apply(self) -> Result<(), ApplyError> {
-        let value = unsafe {
-            if matches!(self, Self::Add(_)) {
+    pub fn apply(self, support_dump: bool) -> Result<(), ApplyError> {
+        let value = matches!(self, Self::Add(_));
+        let objc_value = unsafe {
+            if value {
                 kCFBooleanTrue
             } else {
                 kCFBooleanFalse
@@ -132,17 +184,21 @@ impl ExclusionAction {
         };
         match self {
             Self::Add(path) | Self::Remove(path) => {
-                if let Some(path) = CFURL::from_path(path, false) {
-                    Ok(set_resource_property_for_key(
+                if let Some(path) = CFURL::from_path(&path, false) {
+                    set_resource_property_for_key(
                         &path,
                         unsafe { kCFURLIsExcludedFromBackupKey },
-                        value.to_void(),
-                    )?)
+                        objc_value.to_void(),
+                    )?;
                 } else {
-                    Err(ApplyError::InvalidURL)
+                    return Err(ApplyError::InvalidURL);
+                }
+                if support_dump {
+                    set_nodump(&path, value)?;
                 }
             }
         }
+        Ok(())
     }
 }
 

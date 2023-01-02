@@ -1,6 +1,6 @@
 import {Box, Checkbox, Container, Group, Select, Stack, Text} from "@mantine/core";
 import {useRecoilState} from "recoil";
-import {autoStartState, languageState, noIncludeState} from "../../states";
+import {autoStartState, languageState, noIncludeState, supportDumpState} from "../../states";
 import {useTranslation} from "react-i18next";
 import {availableLanguages} from "../../i18n";
 
@@ -8,6 +8,7 @@ export const General = () => {
   const {t} = useTranslation();
 
   const [noInclude, setNoInclude] = useRecoilState(noIncludeState);
+  const [supportDump, setSupportDump] = useRecoilState(supportDumpState);
   const [autoStart, setAutoStart] = useRecoilState(autoStartState);
   const [language, setLanguage] = useRecoilState(languageState);
 
@@ -37,6 +38,18 @@ export const General = () => {
           <Text size={"md"}>{t('ignore_included_files')}</Text>
           <Text size={"sm"} color={"dimmed"}>
             {t('dont_include_files_into_backups_even_if_they_dont')}
+          </Text>
+        </>}/>
+      <Checkbox
+        checked={supportDump}
+        size={"sm"}
+        onChange={() => {
+          setSupportDump(!supportDump);
+        }}
+        label={<>
+          <Text size={"md"}>{t('support_dump_title')}</Text>
+          <Text size={"sm"} color={"dimmed"}>
+            {t('support_dump_desc')}
           </Text>
         </>}/>
     </Stack>

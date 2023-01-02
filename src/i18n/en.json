@@ -75,5 +75,7 @@
   "merge_rule": "Merge Rule",
   "concrete_rule": "Concrete Rule",
   "language": "Language:",
-  "lang_auto": "Use system defaults"
+  "lang_auto": "Use system defaults",
+  "support_dump_title": "NODUMP flag",
+  "support_dump_desc": "Add NODUMP flag to excluded files. This flag adds support for DUMP(8) and BorgBackup."
 }

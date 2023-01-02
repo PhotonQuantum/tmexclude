@@ -71,5 +71,7 @@
   "merge_rule": "合并规则",
   "concrete_rule": "具体规则",
   "language": "语言 (Language):",
-  "lang_auto": "使用系统默认 (Use system defaults)"
+  "lang_auto": "使用系统默认 (Use system defaults)",
+  "support_dump_title": "NODUMP 标记",
+  "support_dump_desc": "给排除的文件添加 NODUMP 标记。启用这个选项将提供 DUMP(8) 和 BorgBackup 支持。"
 }

@@ -55,6 +55,20 @@ export const noIncludeState = selector<boolean>({
   }
 })
 
+export const supportDumpState = selector<boolean>({
+  key: "supportDump",
+  get: ({get}) => {
+    const config = get(draftConfigState);
+    return (config?.["support-dump"]) ?? false;
+  },
+  set: ({set}, newValue) => {
+    set(draftConfigState, (prev) => ((!(newValue instanceof DefaultValue) && prev !== null) ? {
+      ...prev,
+      "support-dump": newValue
+    } : prev));
+  }
+})
+
 export const rulesState = selector<Record<string, PreRule>>({
   key: "rules",
   get: ({get}) => {

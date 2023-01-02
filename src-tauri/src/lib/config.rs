@@ -25,6 +25,8 @@ use crate::error::{ConfigError, ConfigIOError};
 pub struct Config {
     /// Do not include files to backups if conditions are not met. Defaults to `false`.
     pub no_include: bool,
+    /// Support NODUMP flag. Defaults to `false`.
+    pub support_dump: bool,
     /// Configs related to walking, including interested directories and corresponding rules.
     pub walk: Arc<WalkConfig>,
 }
@@ -35,6 +37,7 @@ impl TryFrom<PreConfig> for Config {
     fn try_from(value: PreConfig) -> Result<Self, Self::Error> {
         Ok(Self {
             no_include: value.no_include,
+            support_dump: value.support_dump,
             walk: Arc::new(WalkConfig::from(
                 value.directories,
                 &value.rules,
@@ -261,7 +264,9 @@ impl WalkConfig {
 #[serde(rename_all = "kebab-case")]
 pub struct PreConfig {
     #[serde(default)]
-    no_include: bool,
+    pub no_include: bool,
+    #[serde(default)]
+    pub support_dump: bool,
     #[serde(default)]
     directories: Vec<PreDirectory>,
     #[serde(default)]
@@ -399,6 +404,7 @@ mod test {
             .map_err(|e| ConfigError::Deserialize(Box::new(AdhocError(e.to_string()))))?;
         Ok(Config {
             no_include: pre_config.no_include,
+            support_dump: pre_config.support_dump,
             walk: Arc::new(WalkConfig::from(
                 pre_config.directories,
                 &pre_config.rules,

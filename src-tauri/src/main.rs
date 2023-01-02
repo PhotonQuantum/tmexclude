@@ -72,11 +72,15 @@ fn stop_full_scan(mission: tauri::State<Arc<Mission>>) {
 }
 
 #[tauri::command]
-#[instrument(skip(batch), fields(add = batch.add.len(), remove = batch.remove.len()))]
-async fn apply_action_batch(batch: ExclusionActionBatch) -> Result<(), ApplyErrors> {
+#[instrument(skip_all, fields(add = batch.add.len(), remove = batch.remove.len()))]
+async fn apply_action_batch(
+    mission: tauri::State<'_, Arc<Mission>>,
+    batch: ExclusionActionBatch,
+) -> Result<(), ApplyErrors> {
+    let support_dump = mission.inner().config().support_dump;
     tauri::async_runtime::spawn_blocking(move || {
         let r = batch
-            .apply()
+            .apply(support_dump)
             .tap_err(|e| e.values().for_each(|e| error!(?e, "Apply batch failed")));
         ApplyErrors::from(r)
     })

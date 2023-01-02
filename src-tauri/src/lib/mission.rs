@@ -176,8 +176,16 @@ impl Mission {
                     let this = this.clone();
                     let found = found.clone();
                     move || {
-                        let walk_config = (*this.config_().walk).clone();
-                        let result = walk_recursive(walk_config, curr_tx, found, abort.clone());
+                        let config = this.config_();
+                        let walk_config = (*config.walk).clone();
+                        let support_dump = config.support_dump;
+                        let result = walk_recursive(
+                            walk_config,
+                            support_dump,
+                            curr_tx,
+                            found,
+                            abort.clone(),
+                        );
                         if !abort.load(Ordering::Relaxed) {
                             this.set_scan_status(ScanStatus::Result(result));
                         }

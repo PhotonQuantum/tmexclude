@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- NODUMP flag support. This flag is used by DUMP(8) and BorgBackup to indicate that a file should not be backed up.
+  Check their documentation for more information.
+
 ### Fixed
 
 - No message is shown to the user when trying to save an invalid config.
