@@ -1,6 +1,6 @@
 [package]
 name = "tmexclude"
-version = "0.2.1"
+version = "0.2.2"
 description = "A Tauri App"
 authors = ["LightQuantum <self@lightquantum.me>"]
 license = ""

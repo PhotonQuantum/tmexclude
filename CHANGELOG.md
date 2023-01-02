@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2023-01-03
+
 ### Added
 
 - NODUMP flag support. This flag is used by DUMP(8) and BorgBackup to indicate that a file should not be backed up.
@@ -41,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The CLI interface has been temporarily removed. It will be re-added in a future release.
 - The homebrew formula is abandoned because we are now a GUI application. A new cask might be added in the future.
  
-[Unreleased]: https://github.com/PhotonQuantum/tmexclude/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/PhotonQuantum/tmexclude/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/PhotonQuantum/tmexclude/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/PhotonQuantum/tmexclude/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/PhotonQuantum/tmexclude/releases/tag/v0.2.0

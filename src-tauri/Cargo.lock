@@ -3723,7 +3723,7 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "tmexclude"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "arc-swap",
  "assert_cmd",
