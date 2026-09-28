@@ -48,6 +48,15 @@ rules:
     - Go Modules (Golang)
     - Mix dependencies (Elixir)
     - Mix build files (Elixir)
+  # Auto-exclude hidden (dot-prefixed) directories, e.g. state/cache dirs of tools
+  # not covered by a dedicated rule above. Opt in by uncommenting.
+  # `exclude-hidden` matches dot-prefixed real directories only; dot-files and
+  # dot-symlinks are ignored. It is gated by `if-exists` like `excludes`.
+  # `protects` lists entries this rule must never exclude; a stale exclusion on
+  # them is removed instead.
+  # Hidden:
+  #   exclude-hidden: true
+  #   protects: [ .ssh, .gnupg, .config, .local ]
   Swift:
     # Paths to exclude.
     excludes: [ ".build" ]

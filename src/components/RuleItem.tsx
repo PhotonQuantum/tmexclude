@@ -144,6 +144,7 @@ export const RuleItem = React.memo(({
                        value={value.excludes}
                        onChange={(newExcludes) => {
                          setValue({
+                           ...value,
                            excludes: newExcludes,
                            "if-exists": value["if-exists"]
                          });
@@ -161,6 +162,7 @@ export const RuleItem = React.memo(({
                        value={value["if-exists"]}
                        onChange={(newIfExists) => {
                          setValue({
+                           ...value,
                            excludes: value.excludes,
                            "if-exists": newIfExists
                          });

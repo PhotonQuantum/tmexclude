@@ -75,6 +75,16 @@ pub struct Rule {
     /// Exclude paths if *any* of these paths exist in the same directory as the path to be excluded.
     #[serde(default)]
     pub if_exists: Vec<PathBuf>,
+    /// Also exclude dot-prefixed *directories* (dot-files and dot-symlinks are ignored).
+    /// Gated by `if_exists` like `excludes`. Defaults to `false` (feature off).
+    #[serde(default)]
+    #[ts(optional)]
+    pub exclude_hidden: Option<bool>,
+    /// Paths this rule must never exclude: blocks Add actions only, so a stale
+    /// exclusion on a protected path is still removed. Defaults to empty.
+    #[serde(default)]
+    #[ts(optional)]
+    pub protects: Option<Vec<PathBuf>>,
 }
 
 fn max_common_path(path_1: impl AsRef<Path>, path_2: impl AsRef<Path>) -> PathBuf {
@@ -424,14 +434,17 @@ mod test {
             let rule_a = Rule {
                 excludes: vec![path!("exclude_a")],
                 if_exists: vec![],
+                ..Default::default()
             };
             let rule_b = Rule {
                 excludes: vec![path!("exclude_b")],
                 if_exists: vec![],
+                ..Default::default()
             };
             let rule_d = Rule {
                 excludes: vec![path!("exclude_d1"), path!("exclude_d2")],
                 if_exists: vec![path!("a"), path!("b")],
+                ..Default::default()
             };
 
             assert!(config.no_include);
@@ -451,6 +464,30 @@ mod test {
                     skips: hashset![cwd_path!("tests/mock_dirs/path_b")],
                 })
             );
+        });
+    }
+
+    #[test]
+    fn must_parse_hidden_rule() {
+        with_directory(|| {
+            let config = config_from(serde_yaml::Deserializer::from_str(include_str!(
+                "../../tests/configs/hidden_rule.yaml"
+            )))
+            .expect("must parse config");
+
+            let hidden_rule = &config.walk.directories[0].rules[0];
+            assert_eq!(hidden_rule.exclude_hidden, Some(true));
+            assert_eq!(
+                hidden_rule.protects,
+                Some(vec![path!(".ssh"), path!(".gnupg")])
+            );
+
+            // A rule without the new fields parses with the feature off.
+            let absent: Rule =
+                serde_yaml::from_str("excludes: [ build ]\nif-exists: [ build.gradle ]")
+                    .expect("must parse rule");
+            assert_eq!(absent.exclude_hidden, None);
+            assert_eq!(absent.protects, None);
         });
     }
 

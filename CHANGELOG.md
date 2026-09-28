@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `exclude-hidden` rule option: automatically exclude hidden (dot-prefixed) directories, so caches and state directories created by development tools no longer need manually maintained exclusion lists.
+- `protects` rule option: a per-rule allowlist that vetoes exclusion of critical paths (e.g. `.ssh`, `.gnupg`) while still allowing stale exclusions on them to be cleaned.
+
+### Fixed
+
+- The watcher no longer spawns an unbounded blocking task per filesystem event. Events are coalesced into batches bounded by an in-flight cap and a bounded pending set, fixing CPU saturation (over 1000% on a 10-core machine) during mass deletions such as `uv cache prune`.
+- When `no-include` is enabled, directories whose entries match no rule now skip per-entry xattr queries entirely.
+
 ## [0.2.2] - 2023-01-03
 
 ### Added
